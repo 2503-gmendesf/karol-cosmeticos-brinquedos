@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KosmoSystem — Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Kosmo<span class="acento">System</span></h1>
+      <p>Sistema de Gestão para Loja de Cosméticos</p>
+    </div>
+
+    <!-- Mensagem de erro -->
+    <div id="msg-erro" class="login-erro" role="alert"></div>
+
+    <form id="form-login" novalidate>
+      <div class="grupo">
+        <label class="label" for="email">E-mail</label>
+        <input class="input" type="email" id="email"
+               placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="grupo">
+        <label class="label" for="senha">Senha</label>
+        <input class="input" type="password" id="senha"
+               placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-lg" id="btn-entrar">
+        Entrar
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:16px;font-size:.72rem;color:var(--muted)">
+      KosmoSystem v1.0
+    </p>
+  </div>
+
+  <!-- Supabase SDK (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase.js"></script>
+  <script>
+    /* Redireciona se já há sessão ativa */
+    (async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) return;
+
+      const { data: perfil } = await db
+        .from('profiles').select('perfil').eq('id', session.user.id).single();
+
+      window.location.href = perfil?.perfil === 'admin'
+        ? 'relatorios.html' : 'pdv.html';
+    })();
+
+    /* Login */
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn    = document.getElementById('btn-entrar');
+      const erroEl = document.getElementById('msg-erro');
+
+      erroEl.classList.remove('visivel');
+      btn.disabled    = true;
+      btn.textContent = 'Entrando...';
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      const { data, error } = await db.auth.signInWithPassword({ email, password: senha });
+
+      if (error) {
+        // Mensagem amigável em vez de expor detalhes técnicos
+        erroEl.textContent = 'E-mail ou senha incorretos. Verifique e tente novamente.';
+        erroEl.classList.add('visivel');
+        btn.disabled    = false;
+        btn.textContent = 'Entrar';
+        return;
+      }
+
+      /* Busca perfil para redirecionar corretamente */
+      const { data: perfil } = await db
+        .from('profiles').select('perfil').eq('id', data.user.id).single();
+
+      window.location.href = perfil?.perfil === 'admin'
+        ? 'relatorios.html' : 'pdv.html';
+    });
+  </script>
+</body>
+</html>

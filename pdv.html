@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KosmoSystem — PDV</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<!-- ── SIDEBAR ─────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>Kosmo<span class="acento">System</span></h2>
+    <small>Gestão de Cosméticos</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="relatorios.html" class="nav-item" data-admin><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="pdv.html"        class="nav-item"><span class="nav-icon">🛒</span> PDV — Vendas</a>
+    <a href="produtos.html"   class="nav-item"><span class="nav-icon">📦</span> Produtos</a>
+    <a href="configuracoes.html" class="nav-item" data-admin><span class="nav-icon">⚙️</span> Configurações</a>
+  </nav>
+  <div class="sidebar-footer">KosmoSystem v1.0</div>
+</aside>
+
+<!-- ── CONTEÚDO PRINCIPAL ──────────────────────────── -->
+<div class="main-wrapper">
+  <header class="header">
+    <div class="header-esq">
+      <button class="hamburguer" id="hamburguer" aria-label="Menu">☰</button>
+      <span class="header-titulo">🛒 Ponto de Venda</span>
+    </div>
+    <div class="header-dir">
+      <div class="usuario-info">
+        <span id="usuario-nome">—</span>
+        <span id="usuario-perfil">—</span>
+      </div>
+      <button class="btn-sair" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="conteudo" style="padding:16px">
+
+    <!-- Abas: Nova Venda / Histórico -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-primario" id="btn-aba-nova" onclick="irParaNovaVenda()">
+        ➕ Nova Venda <span style="opacity:.75;font-size:.75rem">(F3)</span>
+      </button>
+      <button class="btn btn-sec" id="btn-aba-historico" onclick="mostrarAba('historico')">
+        🧾 Histórico de Vendas
+      </button>
+    </div>
+
+    <!-- ── ABA: NOVA VENDA ──────────────────────────────── -->
+    <div id="aba-nova-venda">
+    <div class="pdv-layout">
+
+      <!-- Painel esquerdo: busca de produto -->
+      <div class="pdv-esq">
+        <div class="pdv-busca-wrap">
+          <span class="icone-busca">🔍</span>
+          <!-- autofocus garante compatibilidade com scanners USB HID -->
+          <input type="text" id="pdv-busca" class="input"
+                 placeholder="Buscar produto por nome ou código de barras..."
+                 autocomplete="off" autofocus>
+        </div>
+        <!-- Lista de resultados de busca -->
+        <div class="pdv-lista" id="pdv-lista"></div>
+      </div>
+
+      <!-- Painel direito: carrinho -->
+      <div class="carrinho">
+        <div class="carrinho-header">
+          <span>🛍 Carrinho</span>
+          <button class="btn btn-sm btn-sec" onclick="limparCarrinho()">Limpar</button>
+        </div>
+
+        <!-- Itens -->
+        <div class="carrinho-itens" id="carrinho-itens">
+          <div class="carrinho-vazio">
+            <div class="icone">🛒</div>
+            <p>Nenhum produto adicionado.<br>Busque acima ou use o scanner.</p>
+          </div>
+        </div>
+
+        <!-- Rodapé: cliente, desconto, pagamento, total -->
+        <div class="carrinho-rodape">
+
+          <!-- Busca de cliente (opcional) -->
+          <div class="cliente-row">
+            <input type="text" id="cliente-busca" class="input"
+                   style="font-size:.82rem;padding:8px 12px"
+                   placeholder="🔎 Associar cliente (opcional)"
+                   autocomplete="off">
+            <div class="sugestoes-cliente" id="sugestoes-cliente"></div>
+            <div id="cliente-selecionado"
+                 style="font-size:.75rem;color:var(--primario);margin-top:4px;display:none"></div>
+          </div>
+
+          <!-- Desconto -->
+          <div class="campo-desconto">
+            <input type="number" id="desconto-valor" class="input"
+                   placeholder="Desconto" min="0" step="0.01">
+            <div class="toggle-desconto">
+              <button id="btn-fixo" class="ativo" onclick="setTipoDesconto('fixo')">R$</button>
+              <button id="btn-pct"              onclick="setTipoDesconto('percentual')">%</button>
+            </div>
+          </div>
+
+          <!-- Totais -->
+          <div class="totais">
+            <div class="total-linha"><span>Subtotal</span><span id="t-subtotal">R$ 0,00</span></div>
+            <div class="total-linha">
+              <span>Desconto</span>
+              <span id="t-desconto" style="color:var(--perigo)">- R$ 0,00</span>
+            </div>
+            <div class="total-linha total"><span>TOTAL</span><span id="t-total">R$ 0,00</span></div>
+          </div>
+
+          <!-- Formas de pagamento -->
+          <div class="formas-pag">
+            <div class="formas-pag-label">Forma de Pagamento</div>
+            <div class="formas-pag-btns" id="formas-btns">
+              <span style="font-size:.8rem;color:var(--muted)">Carregando...</span>
+            </div>
+          </div>
+
+          <!-- Troco (só aparece ao selecionar Dinheiro) -->
+          <div class="troco-row" id="troco-row">
+            <div style="flex:1">
+              <label class="label" style="margin-bottom:4px">Valor Recebido</label>
+              <input type="number" id="valor-recebido" class="input"
+                     placeholder="0,00" min="0" step="0.01">
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.72rem;color:var(--muted);margin-bottom:2px">TROCO</div>
+              <div class="troco-valor" id="troco-valor">R$ 0,00</div>
+            </div>
+          </div>
+
+          <!-- Observação (opcional) -->
+          <span class="obs-toggle" onclick="alternarObs()">+ Observação</span>
+          <div id="obs-wrap" style="display:none;margin-bottom:10px">
+            <textarea id="obs-campo" class="input" rows="2"
+                      placeholder="Observação da venda..."></textarea>
+          </div>
+
+          <!-- Botão finalizar -->
+          <button class="btn btn-sucesso btn-bloco btn-lg"
+                  id="btn-finalizar" onclick="finalizarVenda()">
+            ✅ Concluir Venda
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- ── ABA: HISTÓRICO DE VENDAS ─────────────────────── -->
+    <div id="aba-historico" style="display:none">
+      <div class="card">
+        <div class="secao-header" style="margin-bottom:14px">
+          <span class="card-titulo" style="margin:0">🧾 Histórico de Vendas</span>
+          <input type="text" id="hist-busca" class="input"
+                 placeholder="Buscar por cliente, vendedor..."
+                 style="max-width:260px;font-size:.82rem">
+        </div>
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th><th>Vendedor</th><th>Cliente</th>
+                <th>Itens</th><th>Pagamento</th><th>Total</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tab-historico">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted)">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="paginacao" id="pag-historico"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal: Venda concluída (sem opção de impressão — apenas confirmação) -->
+<div class="modal-overlay" id="modal-recibo">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-titulo">✅ Venda Concluída!</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-recibo')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="recibo" id="recibo-conteudo"></div>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px">
+        Para imprimir o comprovante desta venda, acesse <strong>Histórico de Vendas</strong> e clique em "Abrir".
+      </p>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-primario" onclick="fecharModal('modal-recibo')">Concluir e Nova Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalhe de venda (histórico) — com opção de impressão -->
+<div class="modal-overlay" id="modal-detalhe-venda">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-titulo">🧾 Detalhe da Venda</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-detalhe-venda')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="recibo" id="detalhe-recibo-conteudo"></div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec"    onclick="fecharModal('modal-detalhe-venda')">Fechar</button>
+      <button class="btn btn-primario" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+/* ── Estado global do PDV ────────────────────────────────── */
+let perfilAtual   = null;
+let todosProdutos = [];
+let carrinho      = [];
+let pagamentoId   = null;
+let pagamentoNome = '';
+let tipoDesconto  = 'fixo';
+let clienteSel    = null;
+let alertaEstoque = 5;
+
+/* ── Inicialização ───────────────────────────────────────── */
+async function init() {
+  const auth = await verificarAuth(['admin', 'vendedor']);
+  if (!auth) return;
+
+  perfilAtual = auth.perfil;
+  renderInfoUsuario(auth.perfil);
+  ocultarElementosAdmin(auth.perfil);
+  initSidebar();
+  marcarNavAtivo();
+
+  /* Carrega dados em paralelo */
+  const [produtosRes, configRes] = await Promise.all([
+    db.from('produtos').select('*, categorias(nome)').order('nome'),
+    db.from('configuracoes').select('valor').eq('chave', 'alerta_estoque_baixo').single()
+  ]);
+
+  if (produtosRes.error) {
+    toast('Erro ao carregar produtos. Verifique a conexão.', 'erro');
+  } else {
+    todosProdutos = produtosRes.data ?? [];
+  }
+  alertaEstoque = parseInt(configRes.data?.valor ?? '5');
+
+  await carregarFormasPagamento();
+  configurarBusca();
+  configurarClienteBusca();
+  document.getElementById('desconto-valor').addEventListener('input', atualizarTotais);
+  document.getElementById('valor-recebido').addEventListener('input', atualizarTotais);
+  configurarBuscaHistorico();
+  configurarAtalhos();
+  focoBusca();
+}
+
+/* ── Abas (Nova Venda / Histórico) ───────────────────────── */
+function mostrarAba(aba) {
+  const nova = document.getElementById('aba-nova-venda');
+  const hist = document.getElementById('aba-historico');
+  const btnNova = document.getElementById('btn-aba-nova');
+  const btnHist = document.getElementById('btn-aba-historico');
+
+  if (aba === 'historico') {
+    nova.style.display = 'none';
+    hist.style.display = 'block';
+    btnNova.classList.replace('btn-primario', 'btn-sec');
+    btnHist.classList.replace('btn-sec', 'btn-primario');
+    carregarHistorico();
+  } else {
+    hist.style.display = 'none';
+    nova.style.display = 'block';
+    btnHist.classList.replace('btn-primario', 'btn-sec');
+    btnNova.classList.replace('btn-sec', 'btn-primario');
+    focoBusca();
+  }
+}
+
+/** Atalho/botão "Nova Venda" — volta para a tela de venda e foca a busca */
+function irParaNovaVenda() {
+  mostrarAba('nova');
+}
+
+/** Configura atalhos de teclado globais do PDV (F3 = Nova Venda) */
+function configurarAtalhos() {
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F3') {
+      e.preventDefault();
+      irParaNovaVenda();
+    }
+  });
+}
+
+/* ── Histórico de vendas ─────────────────────────────────── */
+let historicoVendas = [];
+let paginaHistorico = 1;
+
+async function carregarHistorico() {
+  const corpo = document.getElementById('tab-historico');
+  corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Carregando...</td></tr>';
+
+  const { data, error } = await db
+    .from('vendas')
+    .select('*, itens_venda(*)')
+    .order('criado_em', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--perigo)">Erro ao carregar histórico. Verifique a conexão.</td></tr>';
+    toast('Erro ao carregar histórico de vendas.', 'erro');
+    return;
+  }
+
+  historicoVendas = data ?? [];
+  paginaHistorico = 1;
+  renderHistorico();
+}
+
+function configurarBuscaHistorico() {
+  const input = document.getElementById('hist-busca');
+  input?.addEventListener('input', debounce(() => {
+    paginaHistorico = 1;
+    renderHistorico();
+  }, 250));
+}
+
+function renderHistorico() {
+  const corpo = document.getElementById('tab-historico');
+  const q = (document.getElementById('hist-busca')?.value || '').trim().toLowerCase();
+
+  let lista = historicoVendas;
+  if (q) {
+    lista = lista.filter(v =>
+      (v.vendedor_nome || '').toLowerCase().includes(q) ||
+      (v.cliente_nome  || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (!lista.length) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Nenhuma venda encontrada.</td></tr>';
+    document.getElementById('pag-historico').innerHTML = '';
+    return;
+  }
+
+  const { items, total, paginas, pagina } = paginar(lista, paginaHistorico, 15);
+
+  corpo.innerHTML = items.map(v => {
+    const qtdItens = (v.itens_venda || []).reduce((s, i) => s + i.quantidade, 0);
+    return `
+      <tr>
+        <td>${fmtDataHora(v.criado_em)}</td>
+        <td>${v.vendedor_nome ?? '—'}</td>
+        <td>${v.cliente_nome ?? '—'}</td>
+        <td>${qtdItens}</td>
+        <td>${v.forma_pagamento_nome ?? '—'}</td>
+        <td><strong>${fmt(v.total)}</strong></td>
+        <td><button class="btn btn-sm btn-sec" onclick="abrirDetalheVenda('${v.id}')">Abrir</button></td>
+      </tr>`;
+  }).join('');
+
+  renderPaginacao(document.getElementById('pag-historico'), pagina, paginas, p => {
+    paginaHistorico = p;
+    renderHistorico();
+  });
+}
+
+/** Abre o modal de detalhe de uma venda do histórico (com opção de impressão) */
+function abrirDetalheVenda(vendaId) {
+  const venda = historicoVendas.find(v => v.id === vendaId);
+  if (!venda) return;
+
+  const itens    = venda.itens_venda || [];
+  const subtotal = venda.subtotal ?? itens.reduce((s, i) => s + i.subtotal, 0);
+  const desconto = venda.desconto ?? 0;
+  const total    = venda.total;
+
+  document.getElementById('detalhe-recibo-conteudo').innerHTML = montarReciboHTML({
+    dataHora: fmtDataHora(venda.criado_em),
+    itens, subtotal, desconto, total,
+    pagamentoNome: venda.forma_pagamento_nome,
+    clienteNome:   venda.cliente_nome ?? null,
+    observacao:    venda.observacao ?? null
+  });
+
+  abrirModal('modal-detalhe-venda');
+}
+
+/* ── Formas de pagamento ─────────────────────────────────── */
+async function carregarFormasPagamento() {
+  const { data, error } = await db
+    .from('formas_pagamento').select('*').eq('ativo', true).order('nome');
+
+  const container = document.getElementById('formas-btns');
+
+  if (error || !data?.length) {
+    container.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">Nenhuma forma ativa</span>';
+    return;
+  }
+
+  container.innerHTML = data.map(fp => `
+    <button class="btn-forma"
+            data-id="${fp.id}" data-nome="${fp.nome}"
+            onclick="selecionarPagamento(this, ${fp.id}, '${fp.nome}')">
+      ${fp.nome}
+    </button>
+  `).join('');
+}
+
+function selecionarPagamento(el, id, nome) {
+  document.querySelectorAll('.btn-forma').forEach(b => b.classList.remove('ativo'));
+  el.classList.add('ativo');
+  pagamentoId   = id;
+  pagamentoNome = nome;
+
+  /* Exibe campo de troco somente para Dinheiro */
+  document.getElementById('troco-row').classList.toggle('visivel', nome === 'Dinheiro');
+  atualizarTotais();
+}
+
+/* ── Busca de produto ────────────────────────────────────── */
+function focoBusca() {
+  document.getElementById('pdv-busca').focus();
+}
+
+function configurarBusca() {
+  const input = document.getElementById('pdv-busca');
+  const lista = document.getElementById('pdv-lista');
+
+  /* Busca enquanto o usuário digita (ou o scanner envia o código) */
+  input.addEventListener('input', debounce(() => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { lista.classList.remove('visivel'); lista.innerHTML = ''; return; }
+
+    const resultados = todosProdutos
+      .filter(p =>
+        p.nome.toLowerCase().includes(q) ||
+        (p.codigo_barras && p.codigo_barras.includes(q)) ||
+        (p.codigo_extra  && p.codigo_extra.toLowerCase().includes(q))
+      )
+      .slice(0, 12);
+
+    if (!resultados.length) {
+      lista.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">
+        Nenhum produto encontrado para "<strong>${q}</strong>"</div>`;
+      lista.classList.add('visivel');
+      return;
+    }
+
+    lista.innerHTML = resultados.map(p => `
+      <div class="pdv-item" onclick="adicionarAoCarrinho('${p.id}')">
+        ${p.imagem_url
+          ? `<img src="${p.imagem_url}" class="prod-img" alt="">`
+          : `<div class="prod-img-vazio">📦</div>`}
+        <div class="pdv-item-info">
+          <div class="pdv-item-nome">${p.nome}</div>
+          <div class="pdv-item-meta">
+            ${p.categorias?.nome ? p.categorias.nome + ' · ' : ''}
+            ${p.codigo_barras   ? p.codigo_barras + ' · '   : ''}
+            <span class="${p.estoque <= 0 ? 'est-baixo' : p.estoque <= alertaEstoque ? 'est-aviso' : 'est-ok'}">
+              Estoque: ${p.estoque}
+            </span>
+          </div>
+        </div>
+        <div class="pdv-item-preco">${fmt(p.preco_venda)}</div>
+      </div>
+    `).join('');
+    lista.classList.add('visivel');
+  }, 180));
+
+  /* Enter → adiciona primeiro resultado (ou busca por código exato) */
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const primeiro = lista.querySelector('.pdv-item');
+      if (primeiro) { primeiro.click(); return; }
+      /* Tenta match exato de código de barras (scanner) */
+      const exato = todosProdutos.find(p => p.codigo_barras === input.value.trim());
+      if (exato) adicionarAoCarrinho(exato.id);
+    }
+    if (e.key === 'Escape') lista.classList.remove('visivel');
+  });
+
+  /* Fecha lista ao clicar fora */
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#pdv-busca') && !e.target.closest('#pdv-lista'))
+      lista.classList.remove('visivel');
+  });
+}
+
+/* ── Carrinho ────────────────────────────────────────────── */
+function adicionarAoCarrinho(produtoId) {
+  const prod = todosProdutos.find(p => p.id === produtoId);
+  if (!prod) return;
+
+  if (prod.estoque <= 0) {
+    toast('Produto sem estoque disponível!', 'aviso');
+    return;
+  }
+
+  const existente = carrinho.find(i => i.id === produtoId);
+  if (existente) {
+    if (existente.qtd >= prod.estoque) {
+      toast('Quantidade máxima em estoque atingida!', 'aviso');
+      return;
+    }
+    existente.qtd++;
+  } else {
+    carrinho.push({
+      id:    prod.id,
+      nome:  prod.nome,
+      preco: prod.preco_venda,
+      custo: prod.preco_custo ?? 0,
+      qtd:   1,
+      estoque: prod.estoque
+    });
+  }
+
+  renderCarrinho();
+  document.getElementById('pdv-busca').value = '';
+  document.getElementById('pdv-lista').classList.remove('visivel');
+  focoBusca();
+}
+
+function removerDoCarrinho(id) {
+  carrinho = carrinho.filter(i => i.id !== id);
+  renderCarrinho();
+}
+
+function alterarQtd(id, delta) {
+  const item = carrinho.find(i => i.id === id);
+  if (!item) return;
+  item.qtd = Math.max(1, Math.min(item.qtd + delta, item.estoque));
+  renderCarrinho();
+}
+
+function definirQtd(id, val) {
+  const item = carrinho.find(i => i.id === id);
+  if (!item) return;
+  const n = parseInt(val);
+  if (!isNaN(n) && n >= 1) item.qtd = Math.min(n, item.estoque);
+  renderCarrinho();
+}
+
+function limparCarrinho() {
+  carrinho = [];
+  clienteSel = null;
+  document.getElementById('cliente-busca').value = '';
+  document.getElementById('cliente-selecionado').style.display = 'none';
+  document.getElementById('desconto-valor').value = '';
+  document.getElementById('obs-campo').value = '';
+  pagamentoId = null;
+  pagamentoNome = '';
+  document.querySelectorAll('.btn-forma').forEach(b => b.classList.remove('ativo'));
+  document.getElementById('troco-row').classList.remove('visivel');
+  document.getElementById('valor-recebido').value = '';
+  renderCarrinho();
+}
+
+function renderCarrinho() {
+  const container = document.getElementById('carrinho-itens');
+
+  if (!carrinho.length) {
+    container.innerHTML = `
+      <div class="carrinho-vazio">
+        <div class="icone">🛒</div>
+        <p>Nenhum produto adicionado.<br>Busque acima ou use o scanner.</p>
+      </div>`;
+    atualizarTotais();
+    return;
+  }
+
+  container.innerHTML = carrinho.map(item => `
+    <div class="item-carrinho">
+      <div class="item-linha1">
+        <span class="item-nome">${item.nome}</span>
+        <button class="item-remover" onclick="removerDoCarrinho('${item.id}')"
+                title="Remover">🗑</button>
+      </div>
+      <div class="item-linha2">
+        <div class="ctrl-qtd">
+          <button class="btn-qtd" onclick="alterarQtd('${item.id}', -1)">−</button>
+          <input class="input-qtd" type="number" value="${item.qtd}"
+                 min="1" max="${item.estoque}"
+                 onchange="definirQtd('${item.id}', this.value)">
+          <button class="btn-qtd" onclick="alterarQtd('${item.id}', 1)">+</button>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.72rem;color:var(--muted)">${fmt(item.preco)} × ${item.qtd}</div>
+          <div class="item-subtotal">${fmt(item.preco * item.qtd)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  atualizarTotais();
+}
+
+function atualizarTotais() {
+  const subtotal   = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+  const descRaw    = parseFloat(document.getElementById('desconto-valor').value) || 0;
+  const desconto   = tipoDesconto === 'percentual'
+    ? subtotal * (descRaw / 100)
+    : descRaw;
+  const total      = Math.max(0, subtotal - desconto);
+
+  document.getElementById('t-subtotal').textContent  = fmt(subtotal);
+  document.getElementById('t-desconto').textContent  = `- ${fmt(desconto)}`;
+  document.getElementById('t-total').textContent     = fmt(total);
+
+  /* Troco */
+  if (pagamentoNome === 'Dinheiro') {
+    const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+    document.getElementById('troco-valor').textContent = fmt(Math.max(0, recebido - total));
+  }
+}
+
+function setTipoDesconto(tipo) {
+  tipoDesconto = tipo;
+  document.getElementById('btn-fixo').classList.toggle('ativo', tipo === 'fixo');
+  document.getElementById('btn-pct').classList.toggle('ativo',  tipo === 'percentual');
+  atualizarTotais();
+}
+
+function alternarObs() {
+  const w = document.getElementById('obs-wrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ── Busca de cliente ────────────────────────────────────── */
+function configurarClienteBusca() {
+  const input    = document.getElementById('cliente-busca');
+  const lista    = document.getElementById('sugestoes-cliente');
+
+  input.addEventListener('input', debounce(async () => {
+    const q = input.value.trim();
+    if (q.length < 2) { lista.classList.remove('visivel'); return; }
+
+    const { data } = await db
+      .from('clientes')
+      .select('id, nome, cpf')
+      .or(`nome.ilike.%${q}%,cpf.ilike.%${q}%`)
+      .limit(6);
+
+    if (!data?.length) { lista.classList.remove('visivel'); return; }
+
+    lista.innerHTML = data.map(c => `
+      <div class="sugestao-item"
+           onclick="selecionarCliente('${c.id}', '${c.nome.replace(/'/g,"\\'")}', '${c.cpf ?? ''}')">
+        ${c.nome}${c.cpf ? ` <span style="color:var(--muted)">· ${c.cpf}</span>` : ''}
+      </div>
+    `).join('');
+    lista.classList.add('visivel');
+  }, 300));
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.cliente-row')) lista.classList.remove('visivel');
+  });
+}
+
+function selecionarCliente(id, nome, cpf) {
+  clienteSel = { id, nome, cpf };
+  document.getElementById('cliente-busca').value = nome;
+  document.getElementById('sugestoes-cliente').classList.remove('visivel');
+  const el = document.getElementById('cliente-selecionado');
+  el.textContent = `✓ ${nome}${cpf ? ' · ' + cpf : ''}`;
+  el.style.display = 'block';
+}
+
+/* ── Finalizar venda ─────────────────────────────────────── */
+async function finalizarVenda() {
+  if (!carrinho.length) { toast('Adicione produtos ao carrinho!', 'aviso'); return; }
+  if (!pagamentoId)     { toast('Selecione a forma de pagamento!', 'aviso'); return; }
+
+  const btn = document.getElementById('btn-finalizar');
+  btn.disabled    = true;
+  btn.textContent = 'Processando...';
+
+  const subtotal  = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+  const descRaw   = parseFloat(document.getElementById('desconto-valor').value) || 0;
+  const desconto  = tipoDesconto === 'percentual'
+    ? subtotal * (descRaw / 100) : descRaw;
+  const total     = Math.max(0, subtotal - desconto);
+  const obs       = document.getElementById('obs-campo').value.trim() || null;
+
+  try {
+    /* 1. Insere o registro de venda */
+    const { data: venda, error: erroVenda } = await db
+      .from('vendas')
+      .insert({
+        vendedor_id:          perfilAtual.id,
+        vendedor_nome:        perfilAtual.nome,
+        cliente_id:           clienteSel?.id ?? null,
+        forma_pagamento_id:   pagamentoId,
+        forma_pagamento_nome: pagamentoNome,
+        desconto,
+        tipo_desconto:        tipoDesconto,
+        subtotal,
+        total,
+        observacao:           obs
+      })
+      .select()
+      .single();
+
+    if (erroVenda) throw erroVenda;
+
+    /* 2. Insere os itens da venda */
+    const itens = carrinho.map(i => ({
+      venda_id:             venda.id,
+      produto_id:           i.id,
+      produto_nome:         i.nome,
+      quantidade:           i.qtd,
+      preco_unitario:       i.preco,
+      preco_custo_unitario: i.custo,
+      subtotal:             i.preco * i.qtd
+    }));
+
+    const { error: erroItens } = await db.from('itens_venda').insert(itens);
+    if (erroItens) throw erroItens;
+
+    /* 3. Subtrai estoque via RPC (evita race condition) */
+    for (const item of carrinho) {
+      const { error: erroEstoque } = await db.rpc('subtrair_estoque', {
+        p_produto_id: item.id,
+        p_quantidade: item.qtd
+      });
+      if (erroEstoque) {
+        /* Atualiza local para refletir possível inconsistência */
+        console.warn('Erro ao subtrair estoque:', erroEstoque.message);
+        toast(`Atenção: erro ao atualizar estoque de "${item.nome}".`, 'aviso');
+      }
+      /* Atualiza cache local */
+      const prod = todosProdutos.find(p => p.id === item.id);
+      if (prod) prod.estoque = Math.max(0, prod.estoque - item.qtd);
+    }
+
+    exibirRecibo(venda, itens, subtotal, desconto, total);
+    limparCarrinho();
+    toast('Venda concluída com sucesso!', 'sucesso');
+
+  } catch (err) {
+    console.error('Erro ao finalizar venda:', err);
+    toast('Erro ao concluir venda: ' + err.message, 'erro');
+  }
+
+  btn.disabled    = false;
+  btn.textContent = '✅ Concluir Venda';
+}
+
+/**
+ * Monta o HTML do comprovante (recibo) — usado tanto na confirmação
+ * de venda quanto no detalhe do histórico (com impressão).
+ */
+function montarReciboHTML({ dataHora, itens, subtotal, desconto, total, pagamentoNome, recebido = 0, troco = 0, clienteNome = null, observacao = null }) {
+  return `
+    <div class="recibo-header">
+      <div class="recibo-titulo">KosmoSystem</div>
+      <div style="font-size:.75rem;color:#666">Comprovante de Venda</div>
+      <div style="font-size:.75rem;color:#666">${dataHora}</div>
+    </div>
+    <hr class="recibo-divider">
+    ${itens.map(i => `
+      <div class="recibo-linha"><span>${i.produto_nome}</span><span>${i.quantidade}x ${fmt(i.preco_unitario)}</span></div>
+      <div class="recibo-linha" style="color:#999;font-size:.8rem;padding-left:10px"><span></span><span>${fmt(i.subtotal)}</span></div>
+    `).join('')}
+    <hr class="recibo-divider">
+    <div class="recibo-linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+    ${desconto > 0 ? `<div class="recibo-linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
+    <div class="recibo-linha recibo-total"><span>TOTAL</span><span>${fmt(total)}</span></div>
+    <hr class="recibo-divider">
+    <div class="recibo-linha"><span>Pagamento</span><span>${pagamentoNome ?? '—'}</span></div>
+    ${troco > 0 ? `
+      <div class="recibo-linha"><span>Recebido</span><span>${fmt(recebido)}</span></div>
+      <div class="recibo-linha"><span>Troco</span><span>${fmt(troco)}</span></div>
+    ` : ''}
+    ${clienteNome ? `<div class="recibo-linha"><span>Cliente</span><span>${clienteNome}</span></div>` : ''}
+    ${observacao ? `<div style="margin-top:8px;color:#666;font-size:.8rem">Obs: ${observacao}</div>` : ''}
+    <hr class="recibo-divider">
+    <div style="text-align:center;font-size:.75rem;color:#999">Obrigado pela preferência! 🌸</div>
+  `;
+}
+
+function exibirRecibo(venda, itens, subtotal, desconto, total) {
+  const agora    = new Date().toLocaleString('pt-BR');
+  const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+  const troco    = pagamentoNome === 'Dinheiro' ? Math.max(0, recebido - total) : 0;
+
+  document.getElementById('recibo-conteudo').innerHTML = montarReciboHTML({
+    dataHora: agora, itens, subtotal, desconto, total,
+    pagamentoNome, recebido, troco,
+    clienteNome: clienteSel?.nome ?? null,
+    observacao:  venda.observacao ?? null
+  });
+
+  abrirModal('modal-recibo');
+  /* Reseta seleção de pagamento */
+  pagamentoId = null; pagamentoNome = '';
+  document.querySelectorAll('.btn-forma').forEach(b => b.classList.remove('ativo'));
+  document.getElementById('troco-row').classList.remove('visivel');
+  document.getElementById('valor-recebido').value = '';
+}
+
+init();
+</script>
+</body>
+</html>
