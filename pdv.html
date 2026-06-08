@@ -41,6 +41,19 @@
   </header>
 
   <main class="conteudo" style="padding:16px">
+
+    <!-- Abas: Nova Venda / Histórico -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-primario" id="btn-aba-nova" onclick="irParaNovaVenda()">
+        ➕ Nova Venda <span style="opacity:.75;font-size:.75rem">(F3)</span>
+      </button>
+      <button class="btn btn-sec" id="btn-aba-historico" onclick="mostrarAba('historico')">
+        🧾 Histórico de Vendas
+      </button>
+    </div>
+
+    <!-- ── ABA: NOVA VENDA ──────────────────────────────── -->
+    <div id="aba-nova-venda">
     <div class="pdv-layout">
 
       <!-- Painel esquerdo: busca de produto -->
@@ -141,10 +154,38 @@
         </div>
       </div>
     </div>
+    </div>
+
+    <!-- ── ABA: HISTÓRICO DE VENDAS ─────────────────────── -->
+    <div id="aba-historico" style="display:none">
+      <div class="card">
+        <div class="secao-header" style="margin-bottom:14px">
+          <span class="card-titulo" style="margin:0">🧾 Histórico de Vendas</span>
+          <input type="text" id="hist-busca" class="input"
+                 placeholder="Buscar por cliente, vendedor..."
+                 style="max-width:260px;font-size:.82rem">
+        </div>
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th><th>Vendedor</th><th>Cliente</th>
+                <th>Itens</th><th>Pagamento</th><th>Total</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tab-historico">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted)">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="paginacao" id="pag-historico"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
-<!-- Modal: Recibo de venda -->
+<!-- Modal: Venda concluída (sem opção de impressão — apenas confirmação) -->
 <div class="modal-overlay" id="modal-recibo">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -153,9 +194,28 @@
     </div>
     <div class="modal-corpo">
       <div class="recibo" id="recibo-conteudo"></div>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:10px">
+        Para imprimir o comprovante desta venda, acesse <strong>Histórico de Vendas</strong> e clique em "Abrir".
+      </p>
     </div>
     <div class="modal-rodape">
-      <button class="btn btn-sec"    onclick="fecharModal('modal-recibo')">Fechar</button>
+      <button class="btn btn-primario" onclick="fecharModal('modal-recibo')">Concluir e Nova Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalhe de venda (histórico) — com opção de impressão -->
+<div class="modal-overlay" id="modal-detalhe-venda">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-titulo">🧾 Detalhe da Venda</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-detalhe-venda')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="recibo" id="detalhe-recibo-conteudo"></div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec"    onclick="fecharModal('modal-detalhe-venda')">Fechar</button>
       <button class="btn btn-primario" onclick="window.print()">🖨 Imprimir</button>
     </div>
   </div>
@@ -205,7 +265,140 @@ async function init() {
   configurarClienteBusca();
   document.getElementById('desconto-valor').addEventListener('input', atualizarTotais);
   document.getElementById('valor-recebido').addEventListener('input', atualizarTotais);
+  configurarBuscaHistorico();
+  configurarAtalhos();
   focoBusca();
+}
+
+/* ── Abas (Nova Venda / Histórico) ───────────────────────── */
+function mostrarAba(aba) {
+  const nova = document.getElementById('aba-nova-venda');
+  const hist = document.getElementById('aba-historico');
+  const btnNova = document.getElementById('btn-aba-nova');
+  const btnHist = document.getElementById('btn-aba-historico');
+
+  if (aba === 'historico') {
+    nova.style.display = 'none';
+    hist.style.display = 'block';
+    btnNova.classList.replace('btn-primario', 'btn-sec');
+    btnHist.classList.replace('btn-sec', 'btn-primario');
+    carregarHistorico();
+  } else {
+    hist.style.display = 'none';
+    nova.style.display = 'block';
+    btnHist.classList.replace('btn-primario', 'btn-sec');
+    btnNova.classList.replace('btn-sec', 'btn-primario');
+    focoBusca();
+  }
+}
+
+/** Atalho/botão "Nova Venda" — volta para a tela de venda e foca a busca */
+function irParaNovaVenda() {
+  mostrarAba('nova');
+}
+
+/** Configura atalhos de teclado globais do PDV (F3 = Nova Venda) */
+function configurarAtalhos() {
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F3') {
+      e.preventDefault();
+      irParaNovaVenda();
+    }
+  });
+}
+
+/* ── Histórico de vendas ─────────────────────────────────── */
+let historicoVendas = [];
+let paginaHistorico = 1;
+
+async function carregarHistorico() {
+  const corpo = document.getElementById('tab-historico');
+  corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Carregando...</td></tr>';
+
+  const { data, error } = await db
+    .from('vendas')
+    .select('*, itens_venda(*)')
+    .order('criado_em', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--perigo)">Erro ao carregar histórico. Verifique a conexão.</td></tr>';
+    toast('Erro ao carregar histórico de vendas.', 'erro');
+    return;
+  }
+
+  historicoVendas = data ?? [];
+  paginaHistorico = 1;
+  renderHistorico();
+}
+
+function configurarBuscaHistorico() {
+  const input = document.getElementById('hist-busca');
+  input?.addEventListener('input', debounce(() => {
+    paginaHistorico = 1;
+    renderHistorico();
+  }, 250));
+}
+
+function renderHistorico() {
+  const corpo = document.getElementById('tab-historico');
+  const q = (document.getElementById('hist-busca')?.value || '').trim().toLowerCase();
+
+  let lista = historicoVendas;
+  if (q) {
+    lista = lista.filter(v =>
+      (v.vendedor_nome || '').toLowerCase().includes(q) ||
+      (v.cliente_nome  || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (!lista.length) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Nenhuma venda encontrada.</td></tr>';
+    document.getElementById('pag-historico').innerHTML = '';
+    return;
+  }
+
+  const { items, total, paginas, pagina } = paginar(lista, paginaHistorico, 15);
+
+  corpo.innerHTML = items.map(v => {
+    const qtdItens = (v.itens_venda || []).reduce((s, i) => s + i.quantidade, 0);
+    return `
+      <tr>
+        <td>${fmtDataHora(v.criado_em)}</td>
+        <td>${v.vendedor_nome ?? '—'}</td>
+        <td>${v.cliente_nome ?? '—'}</td>
+        <td>${qtdItens}</td>
+        <td>${v.forma_pagamento_nome ?? '—'}</td>
+        <td><strong>${fmt(v.total)}</strong></td>
+        <td><button class="btn btn-sm btn-sec" onclick="abrirDetalheVenda('${v.id}')">Abrir</button></td>
+      </tr>`;
+  }).join('');
+
+  renderPaginacao(document.getElementById('pag-historico'), pagina, paginas, p => {
+    paginaHistorico = p;
+    renderHistorico();
+  });
+}
+
+/** Abre o modal de detalhe de uma venda do histórico (com opção de impressão) */
+function abrirDetalheVenda(vendaId) {
+  const venda = historicoVendas.find(v => v.id === vendaId);
+  if (!venda) return;
+
+  const itens    = venda.itens_venda || [];
+  const subtotal = venda.subtotal ?? itens.reduce((s, i) => s + i.subtotal, 0);
+  const desconto = venda.desconto ?? 0;
+  const total    = venda.total;
+
+  document.getElementById('detalhe-recibo-conteudo').innerHTML = montarReciboHTML({
+    dataHora: fmtDataHora(venda.criado_em),
+    itens, subtotal, desconto, total,
+    pagamentoNome: venda.forma_pagamento_nome,
+    clienteNome:   venda.cliente_nome ?? null,
+    observacao:    venda.observacao ?? null
+  });
+
+  abrirModal('modal-detalhe-venda');
 }
 
 /* ── Formas de pagamento ─────────────────────────────────── */
@@ -568,16 +761,16 @@ async function finalizarVenda() {
   btn.textContent = '✅ Concluir Venda';
 }
 
-function exibirRecibo(venda, itens, subtotal, desconto, total) {
-  const agora    = new Date().toLocaleString('pt-BR');
-  const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
-  const troco    = pagamentoNome === 'Dinheiro' ? Math.max(0, recebido - total) : 0;
-
-  document.getElementById('recibo-conteudo').innerHTML = `
+/**
+ * Monta o HTML do comprovante (recibo) — usado tanto na confirmação
+ * de venda quanto no detalhe do histórico (com impressão).
+ */
+function montarReciboHTML({ dataHora, itens, subtotal, desconto, total, pagamentoNome, recebido = 0, troco = 0, clienteNome = null, observacao = null }) {
+  return `
     <div class="recibo-header">
       <div class="recibo-titulo">KosmoSystem</div>
       <div style="font-size:.75rem;color:#666">Comprovante de Venda</div>
-      <div style="font-size:.75rem;color:#666">${agora}</div>
+      <div style="font-size:.75rem;color:#666">${dataHora}</div>
     </div>
     <hr class="recibo-divider">
     ${itens.map(i => `
@@ -589,16 +782,29 @@ function exibirRecibo(venda, itens, subtotal, desconto, total) {
     ${desconto > 0 ? `<div class="recibo-linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
     <div class="recibo-linha recibo-total"><span>TOTAL</span><span>${fmt(total)}</span></div>
     <hr class="recibo-divider">
-    <div class="recibo-linha"><span>Pagamento</span><span>${pagamentoNome}</span></div>
+    <div class="recibo-linha"><span>Pagamento</span><span>${pagamentoNome ?? '—'}</span></div>
     ${troco > 0 ? `
       <div class="recibo-linha"><span>Recebido</span><span>${fmt(recebido)}</span></div>
       <div class="recibo-linha"><span>Troco</span><span>${fmt(troco)}</span></div>
     ` : ''}
-    ${clienteSel ? `<div class="recibo-linha"><span>Cliente</span><span>${clienteSel.nome}</span></div>` : ''}
-    ${venda.observacao ? `<div style="margin-top:8px;color:#666;font-size:.8rem">Obs: ${venda.observacao}</div>` : ''}
+    ${clienteNome ? `<div class="recibo-linha"><span>Cliente</span><span>${clienteNome}</span></div>` : ''}
+    ${observacao ? `<div style="margin-top:8px;color:#666;font-size:.8rem">Obs: ${observacao}</div>` : ''}
     <hr class="recibo-divider">
     <div style="text-align:center;font-size:.75rem;color:#999">Obrigado pela preferência! 🌸</div>
   `;
+}
+
+function exibirRecibo(venda, itens, subtotal, desconto, total) {
+  const agora    = new Date().toLocaleString('pt-BR');
+  const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+  const troco    = pagamentoNome === 'Dinheiro' ? Math.max(0, recebido - total) : 0;
+
+  document.getElementById('recibo-conteudo').innerHTML = montarReciboHTML({
+    dataHora: agora, itens, subtotal, desconto, total,
+    pagamentoNome, recebido, troco,
+    clienteNome: clienteSel?.nome ?? null,
+    observacao:  venda.observacao ?? null
+  });
 
   abrirModal('modal-recibo');
   /* Reseta seleção de pagamento */
