@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KosmoSystem — PDV</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout PDV ────────────────────────────────────────── */
+    body { overflow: hidden; }
+
+    .pdv-full {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px);
+      background: #f0f4f8;
+    }
+
+    /* Toolbar */
+    .pdv-toolbar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 5px 10px;
+      background: #1a1a2e;
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    .tbtn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border: none; border-radius: 5px;
+      cursor: pointer; font-size: .82rem; font-weight: 600;
+      background: #2d2d44; color: #ccc; white-space: nowrap;
+    }
+    .tbtn:hover { background: #3d3d5c; color: #fff; }
+    .tbtn.destaque { background: #0070f3; color: #fff; }
+    .tbtn.destaque:hover { background: #0056c7; }
+    .tbtn kbd {
+      background: rgba(255,255,255,.15); border-radius: 3px;
+      padding: 1px 5px; font-size: .72rem; font-family: monospace;
+    }
+    .tbtn-sep { width:1px; height:22px; background:#3d3d5c; margin:0 2px; }
+    .tbtn-check {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; background: #2d2d44; border-radius: 5px;
+      color: #ccc; font-size: .82rem; cursor: pointer; white-space: nowrap;
+    }
+    .tbtn-check input { cursor: pointer; accent-color: #0070f3; }
+    .tag-vendedor {
+      margin-left: auto; color: #888; font-size: .78rem;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .tag-impressora {
+      color: #6af; font-size: .78rem;
+      display: flex; align-items: center; gap: 4px; cursor: pointer;
+    }
+
+    /* Busca */
+    .pdv-busca-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; background: #fff;
+      border-bottom: 1px solid #dde3ec; flex-shrink: 0;
+    }
+    .pdv-busca-wrap { position: relative; flex: 1; }
+    .busca-input {
+      width: 100%; border: 2px solid #0070f3; border-radius: 6px;
+      padding: 8px 14px; font-size: .92rem; outline: none;
+      box-sizing: border-box;
+    }
+    .campo-mini {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .82rem; color: #555; white-space: nowrap;
+    }
+    .campo-mini input {
+      width: 66px; border: 1px solid #bbb; border-radius: 5px;
+      padding: 6px 8px; font-size: .88rem; text-align: right;
+    }
+    .campo-mini .val { min-width: 80px; font-weight: 600; color: #222; }
+    .btn-lancar {
+      padding: 7px 18px; background: #0070f3; color: #fff;
+      border: none; border-radius: 6px; font-size: .85rem;
+      font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .btn-lancar:hover { background: #0056c7; }
+
+    /* Sugestões */
+    .pdv-sugestoes {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border: 1px solid #cdd5e0; border-radius: 6px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.12); z-index: 9000;
+      max-height: 340px; overflow-y: auto; display: none;
+    }
+    .pdv-sugestoes.vis { display: block; }
+    .sug-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+      font-size: .87rem;
+    }
+    .sug-item:hover, .sug-item.foco { background: #f0f7ff; }
+    .sug-nome { flex: 1; font-weight: 500; color: #222; }
+    .sug-cod  { color: #888; font-size: .76rem; }
+    .sug-est  { font-size: .76rem; }
+    .sug-preco{ font-weight: 700; color: #0070f3; white-space: nowrap; }
+    .sug-nao-cad {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer;
+      background: #fffbf0; border-top: 1px dashed #f0c040;
+      font-size: .87rem; color: #b07800; font-weight: 600;
+    }
+    .sug-nao-cad:hover { background: #fff3cc; }
+
+    /* Itens */
+    .pdv-itens-wrap { flex: 1; overflow-y: auto; background: #fff; }
+    .pdv-itens-wrap table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .pdv-itens-wrap thead th {
+      background: #f7f8fb; padding: 8px 10px;
+      text-align: left; font-size: .78rem; color: #666;
+      border-bottom: 2px solid #eee; position: sticky; top: 0; z-index: 1;
+    }
+    .pdv-itens-wrap tbody td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .pdv-itens-wrap tbody tr:hover { background: #fafbff; }
+    .td-num { color: #bbb; font-size: .78rem; width: 28px; }
+    .td-qtd { width: 90px; }
+    .td-preco { width: 100px; color: #666; }
+    .td-total { width: 120px; font-weight: 700; text-align: right; }
+    .td-acao { width: 36px; text-align: center; }
+    .input-qtd-item {
+      width: 60px; border: 1px solid #ccc; border-radius: 4px;
+      padding: 4px 6px; font-size: .85rem; text-align: center;
+    }
+    .btn-rem { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+    .badge-nao-cad {
+      font-size: .68rem; background: #fff3cd; color: #856404;
+      border: 1px solid #ffc107; border-radius: 4px;
+      padding: 1px 5px; margin-left: 5px; vertical-align: middle;
+    }
+    .linha-vazia td { text-align: center; padding: 50px; color: #bbb; font-size: .9rem; }
+
+    /* Rodapé */
+    .pdv-rodape {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; background: #fff; border-top: 1px solid #dde3ec; flex-shrink: 0;
+    }
+    .pdv-total-final { font-size: 1.35rem; font-weight: 800; color: #0070f3; }
+    .pdv-btn-concluir {
+      padding: 10px 34px; background: #0070f3; color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem;
+      font-weight: 700; cursor: pointer;
+    }
+    .pdv-btn-concluir:hover { background: #0056c7; }
+    .pdv-btn-limpar {
+      padding: 8px 16px; background: none; border: 1px solid #ccc;
+      border-radius: 6px; color: #999; font-size: .82rem; cursor: pointer;
+    }
+
+    /* Obs flutuante */
+    .obs-flutuante {
+      display: none;
+      position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
+      background: #fff; border: 1px solid #cdd5e0; border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18); padding: 12px 14px;
+      width: 380px; z-index: 8000;
+    }
+    .obs-flutuante.vis { display: block; }
+    .obs-flutuante textarea {
+      width: 100%; border: 1px solid #ccc; border-radius: 6px;
+      padding: 8px; font-size: .85rem; resize: none; box-sizing: border-box;
+    }
+    .obs-flutuante-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px; font-size: .8rem; font-weight: 600; color: #555;
+    }
+    .obs-flutuante-header button {
+      background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #aaa;
+    }
+
+    /* ── Modal de pagamento ───────────────────────────────── */
+    .mpag-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 9999;
+      align-items: flex-start; justify-content: center;
+      padding-top: 40px;
+    }
+    .mpag-overlay.vis { display: flex; }
+    .mpag-box {
+      background: #fff; border-radius: 14px;
+      width: 480px; max-width: 96vw; max-height: 86vh;
+      overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      display: flex; flex-direction: column;
+    }
+
+    /* Cabeçalho modal */
+    .mpag-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px 0;
+    }
+    .mpag-head-titulo { font-size: .85rem; font-weight: 700; color: #888; letter-spacing: .05em; }
+    .mpag-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
+    .mpag-total-box { text-align: center; padding: 10px 18px 6px; }
+    .mpag-total-val { font-size: 2.2rem; font-weight: 800; color: #111; }
+    .mpag-total-sub { font-size: .78rem; color: #888; margin-top: 2px; }
+
+    /* Body do modal */
+    .mpag-body { padding: 6px 18px 18px; flex: 1; }
+
+    /* Seção cliente no modal */
+    .mpag-section { margin-bottom: 14px; }
+    .mpag-section-title {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      color: #999; letter-spacing: .05em; margin-bottom: 6px;
+    }
+    .mpag-cli-wrap { position: relative; }
+    .mpag-cli-sug {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border: 1px solid #cdd5e0; border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1); z-index: 9999;
+      max-height: 160px; overflow-y: auto; display: none;
+    }
+    .mpag-cli-sug.vis { display: block; }
+    .mpag-cli-item { padding: 8px 12px; cursor: pointer; font-size: .83rem; border-bottom: 1px solid #f0f0f0; }
+    .mpag-cli-item:hover { background: #f0f7ff; }
+
+    /* Métodos de pagamento */
+    .mpag-metodos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .mpag-metodo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border: 2px solid #eee; border-radius: 8px;
+      cursor: pointer; transition: border-color .12s, background .12s; outline: none;
+    }
+    .mpag-metodo:focus, .mpag-metodo.foco { border-color: #90c0f8; background: #f8fbff; }
+    .mpag-metodo.ativo  { border-color: #0070f3; background: #f0f7ff; }
+    .mpag-metodo-nome { flex: 1; font-weight: 500; font-size: .92rem; }
+    .mpag-metodo-val {
+      width: 110px; border: 1px solid #ccc; border-radius: 5px;
+      padding: 6px 8px; font-size: .9rem; text-align: right;
+      display: none;
+    }
+    .mpag-metodo.ativo .mpag-metodo-val,
+    .mpag-metodo-val.vis { display: block; }
+
+    /* Troco */
+    .mpag-troco {
+      display: none; align-items: center; justify-content: space-between;
+      background: #f0fff4; border: 1px solid #b7ebc7; border-radius: 7px;
+      padding: 8px 14px; font-size: .85rem; color: #1a6b3a; margin-bottom: 10px;
+    }
+    .mpag-troco.vis { display: flex; }
+    .mpag-troco strong { font-size: 1rem; }
+
+    /* Restante */
+    .mpag-restante {
+      display: flex; justify-content: space-between; font-size: .83rem;
+      color: #666; padding: 4px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 12px;
+    }
+    .rest-ok   { font-weight: 700; color: #27ae60; }
+    .rest-falta{ font-weight: 700; color: #e74c3c; }
+
+    /* Separador seção */
+    .mpag-divider {
+      border: none; border-top: 1px dashed #e0e0e0;
+      margin: 12px 0;
+    }
+
+    /* Desconto */
+    .mpag-desc-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .mpag-desc-row label { font-size: .8rem; color: #777; white-space: nowrap; }
+    .mpag-desc-row input {
+      width: 90px; border: 1px solid #ccc; border-radius: 5px;
+      padding: 6px 8px; font-size: .88rem;
+    }
+    .mpag-desc-toggle { display: flex; }
+    .mpag-desc-toggle button {
+      padding: 5px 10px; border: 1px solid #ccc; background: #f5f5f5;
+      cursor: pointer; font-size: .8rem;
+    }
+    .mpag-desc-toggle button:first-child { border-radius: 5px 0 0 5px; }
+    .mpag-desc-toggle button:last-child  { border-radius: 0 5px 5px 0; border-left: none; }
+    .mpag-desc-toggle button.at { background: #0070f3; color: #fff; border-color: #0070f3; }
+    .mpag-desc-info { font-size: .78rem; color: #27ae60; font-weight: 600; }
+
+    /* Opções finais */
+    .mpag-opcoes {
+      display: flex; align-items: center; gap: 14px;
+      flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .mpag-opc-check {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .85rem; cursor: pointer;
+    }
+    .mpag-opc-check input { width: 15px; height: 15px; accent-color: #0070f3; cursor: pointer; }
+    .mpag-opc-check.fiado { color: #e67e22; }
+
+    /* Impressora no modal */
+    .mpag-impressora-row {
+      display: flex; align-items: center; gap: 8px;
+      background: #f7f8fb; border-radius: 7px; padding: 8px 12px;
+      margin-bottom: 14px; font-size: .82rem; color: #555;
+    }
+    .mpag-impressora-row input {
+      flex: 1; border: 1px solid #ccc; border-radius: 5px;
+      padding: 5px 8px; font-size: .82rem;
+    }
+    .mpag-impressora-row .ico { font-size: 1rem; }
+
+    /* Botão concluir */
+    .mpag-btn-ok {
+      width: 100%; padding: 13px; background: #0070f3; color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem;
+      font-weight: 800; cursor: pointer; letter-spacing: .04em;
+    }
+    .mpag-btn-ok:hover { background: #0056c7; }
+    .mpag-btn-ok:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ── Impressão ─────────────────────────────────────────── */
+    #recibo-print { display: none; }
+    @media print {
+      @page { size: var(--recibo-largura, 74mm) auto; margin: 0; }
+      body > *:not(#recibo-print) { display: none !important; }
+      #recibo-print {
+        display: block !important;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 11px; width: 100%; padding: 4mm 3mm;
+        color: #000; background: #fff;
+      }
+      #recibo-print .r-linha { display: flex; justify-content: space-between; margin: 1.5px 0; gap: 4px; }
+      #recibo-print .r-linha span:last-child { white-space: nowrap; }
+      #recibo-print .r-centro { text-align: center; }
+      #recibo-print .r-hr  { border: none; border-top: 1px solid #000; margin: 4px 0; }
+      #recibo-print .r-dot { border: none; border-top: 1px dotted #000; margin: 4px 0; }
+      #recibo-print .r-bold  { font-weight: bold; }
+      #recibo-print .r-title { font-size: 14px; font-weight: bold; }
+      #recibo-print .r-sm    { font-size: 10px; }
+      #recibo-print .r-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+      #recibo-print table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 3px 0; }
+      #recibo-print table th { text-align: left; border-bottom: 1px solid #000; padding: 1px 0; font-weight: bold; }
+      #recibo-print table th:last-child,
+      #recibo-print table td:last-child { text-align: right; }
+      #recibo-print table td { padding: 2px 0; vertical-align: top; }
+      #recibo-print .r-total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin: 3px 0; }
+    }
+
+    /* Badge não-cadastrado */
+    .badge-nao-cad {
+      font-size: .68rem; background: #fff3cd; color: #856404;
+      border: 1px solid #ffc107; border-radius: 4px;
+      padding: 1px 5px; margin-left: 5px; vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<!-- ── SIDEBAR ─────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>Kosmo<span class="acento">System</span></h2>
+    <small>Gestão de Cosméticos</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="relatorios.html"    class="nav-item" data-admin><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="pdv.html"           class="nav-item"><span class="nav-icon">🛒</span> PDV — Vendas</a>
+    <a href="historico.html"     class="nav-item"><span class="nav-icon">🧾</span> Histórico</a>
+    <a href="produtos.html"      class="nav-item"><span class="nav-icon">📦</span> Produtos</a>
+    <a href="configuracoes.html" class="nav-item" data-admin><span class="nav-icon">⚙️</span> Configurações</a>
+  </nav>
+  <div class="sidebar-footer">KosmoSystem v1.0</div>
+</aside>
+
+<!-- ── WRAPPER ──────────────────────────────────────── -->
+<div class="main-wrapper">
+  <header class="header">
+    <div class="header-esq">
+      <button class="hamburguer" id="hamburguer" aria-label="Menu">☰</button>
+      <span class="header-titulo">🛒 Ponto de Venda</span>
+    </div>
+    <div class="header-dir">
+      <div class="usuario-info">
+        <span id="usuario-nome">—</span>
+        <span id="usuario-perfil">—</span>
+      </div>
+      <button class="btn-sair" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- ── PDV ──────────────────────────────────────────── -->
+  <div class="pdv-full">
+
+    <!-- Toolbar -->
+    <div class="pdv-toolbar">
+      <button class="tbtn destaque" onclick="abrirModalPag()">
+        ✅ Concluir <kbd>F2</kbd>
+      </button>
+      <div class="tbtn-sep"></div>
+      <button class="tbtn" onclick="focusCliente()">
+        👤 Cliente <kbd>F5</kbd>
+      </button>
+      <button class="tbtn" onclick="toggleObs()">
+        📝 Obs. <kbd>F4</kbd>
+      </button>
+      <div class="tbtn-sep"></div>
+      <button class="tbtn" onclick="acionarGaveta()">
+        🗂️ Gaveta <kbd>Alt+F11</kbd>
+      </button>
+      <button class="tbtn" onclick="limparVenda()">🗑 Limpar</button>
+      <span class="tag-impressora" id="tag-impressora"
+            onclick="document.getElementById('mpag-impressora')?.focus()"
+            title="Impressora configurada — clique para alterar" style="display:none">
+        🖨 <span id="tag-impressora-nome"></span>
+      </span>
+      <span class="tag-vendedor">👤 <span id="vendedor-nome-tag">—</span></span>
+    </div>
+
+    <!-- Linha de busca -->
+    <div class="pdv-busca-row">
+      <div class="pdv-busca-wrap">
+        <input type="text" id="pdv-busca" class="busca-input"
+               placeholder="Código, Nome ou use o leitor de código de barras..."
+               autocomplete="off" autofocus>
+        <div class="pdv-sugestoes" id="pdv-sugestoes"></div>
+      </div>
+      <div class="campo-mini">
+        Quant: <input type="number" id="pdv-qtd" value="1" min="1" max="9999">
+      </div>
+      <div class="campo-mini">Preço: <span class="val" id="pdv-preco">—</span></div>
+      <div class="campo-mini">Total: <span class="val" id="pdv-total-item">—</span></div>
+      <button class="btn-lancar" id="btn-lancar" onclick="lancarFoco()">↵ Lançar</button>
+    </div>
+
+    <!-- Itens -->
+    <div class="pdv-itens-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-num">#</th>
+            <th>Produto</th>
+            <th class="td-qtd">Qtd</th>
+            <th class="td-preco">Preço Unit.</th>
+            <th class="td-total">Total</th>
+            <th class="td-acao"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-itens">
+          <tr class="linha-vazia" id="linha-vazia">
+            <td colspan="6">🛒 Nenhum produto — busque acima ou use o scanner</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="pdv-rodape">
+      <button class="pdv-btn-limpar" onclick="limparVenda()">✖ Limpar</button>
+      <span class="pdv-total-final" id="total-rodape">Total = R$ 0,00</span>
+      <button class="pdv-btn-concluir" onclick="abrirModalPag()">
+        ✅ Concluir Venda &nbsp;<kbd style="background:rgba(255,255,255,.2);border-radius:4px;padding:2px 6px;font-size:.78rem">F2</kbd>
+      </button>
+    </div>
+  </div><!-- /pdv-full -->
+</div><!-- /main-wrapper -->
+
+<!-- Observação flutuante (F4) -->
+<div class="obs-flutuante" id="obs-flutuante">
+  <div class="obs-flutuante-header">
+    <span>📝 Observação da venda</span>
+    <button onclick="toggleObs()">×</button>
+  </div>
+  <textarea id="obs-campo" rows="3" placeholder="Observação..."></textarea>
+</div>
+
+<!-- ── MODAL PAGAMENTO ─────────────────────────────────── -->
+<div class="mpag-overlay" id="mpag-overlay">
+  <div class="mpag-box" id="mpag-box">
+
+    <div class="mpag-head">
+      <span class="mpag-head-titulo">PAGAMENTO</span>
+      <button class="mpag-fechar" onclick="fecharModalPag()">×</button>
+    </div>
+
+    <div class="mpag-total-box">
+      <div class="mpag-total-val" id="mpag-total-val">R$ 0,00</div>
+      <div class="mpag-total-sub" id="mpag-total-sub"></div>
+    </div>
+
+    <div class="mpag-body">
+
+      <!-- Cliente (opcional) -->
+      <div class="mpag-section">
+        <div class="mpag-section-title">👤 Cliente (opcional)</div>
+        <div class="mpag-cli-wrap">
+          <input type="text" id="mpag-cli-busca" class="input"
+                 style="font-size:.83rem;padding:7px 10px"
+                 placeholder="Buscar cliente..." autocomplete="off">
+          <div class="mpag-cli-sug" id="mpag-cli-sug"></div>
+          <div id="mpag-cli-sel" style="font-size:.75rem;color:#0070f3;margin-top:3px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- Formas de pagamento -->
+      <div class="mpag-section">
+        <div class="mpag-section-title">💳 Forma de Pagamento <span style="font-size:.7rem;font-weight:400;color:#aaa">(↑↓ navegar · Enter selecionar)</span></div>
+        <div class="mpag-metodos" id="mpag-metodos"></div>
+      </div>
+
+      <!-- Troco -->
+      <div class="mpag-troco" id="mpag-troco">
+        <span>Troco</span><strong id="mpag-troco-val">R$ 0,00</strong>
+      </div>
+
+      <!-- Restante a pagar -->
+      <div class="mpag-restante">
+        <span>Pago / Total</span>
+        <span id="mpag-restante-val" class="rest-falta">R$ 0,00 / R$ 0,00</span>
+      </div>
+
+      <!-- Fiado -->
+      <label class="mpag-opc-check fiado" style="margin-bottom:12px;display:flex">
+        <input type="checkbox" id="cb-fiado" onchange="toggleFiado()">
+        🤝 Fiado (pagar depois)
+      </label>
+
+      <hr class="mpag-divider">
+
+      <!-- Desconto (depois das formas de pagamento) -->
+      <div class="mpag-section">
+        <div class="mpag-section-title">🏷 Desconto (opcional)</div>
+        <div class="mpag-desc-row">
+          <label>Valor:</label>
+          <input type="number" id="mpag-desc" placeholder="0" min="0" step="0.01"
+                 oninput="recalcularPag()">
+          <div class="mpag-desc-toggle">
+            <button id="btn-fixo" class="at" onclick="setTipoDesc('fixo')">R$</button>
+            <button id="btn-pct"              onclick="setTipoDesc('pct')">%</button>
+          </div>
+          <span class="mpag-desc-info" id="mpag-desc-info"></span>
+        </div>
+      </div>
+
+      <hr class="mpag-divider">
+
+      <!-- Impressora + Imprimir -->
+      <div class="mpag-impressora-row">
+        <span class="ico">🖨</span>
+        <input type="text" id="mpag-impressora" placeholder="Nome da impressora..."
+               oninput="salvarImpressora()">
+        <label class="mpag-opc-check">
+          <input type="checkbox" id="cb-imprimir" checked> Imprimir
+        </label>
+      </div>
+
+      <!-- Concluir -->
+      <button class="mpag-btn-ok" id="mpag-btn-ok" onclick="finalizarVenda()">
+        ✅ F2 — CONCLUIR VENDA
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Produto não cadastrado -->
+<div class="modal-overlay" id="modal-nao-cad">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-titulo">📦 Produto Não Cadastrado</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-nao-cad')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <p style="font-size:.82rem;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px;margin-bottom:12px;color:#856404">
+        ⚠️ Será vendido agora e <strong>cadastrado automaticamente</strong> nos produtos.
+      </p>
+      <div class="grupo">
+        <label class="label">Nome do produto *</label>
+        <input type="text" id="nc-nome" class="input" placeholder="Ex: Shampoo 500ml"
+               onkeydown="if(event.key==='Enter')document.getElementById('nc-preco').focus()">
+      </div>
+      <div class="linha-2">
+        <div class="grupo">
+          <label class="label">Preço de venda *</label>
+          <input type="number" id="nc-preco" class="input" placeholder="0,00"
+                 min="0.01" step="0.01"
+                 onkeydown="if(event.key==='Enter')confirmarNaoCad()">
+        </div>
+        <div class="grupo">
+          <label class="label">Quantidade</label>
+          <input type="number" id="nc-qtd" class="input" value="1" min="1"
+                 onkeydown="if(event.key==='Enter')confirmarNaoCad()">
+        </div>
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec" onclick="fecharModal('modal-nao-cad')">Cancelar</button>
+      <button class="btn btn-primario" onclick="confirmarNaoCad()">➕ Adicionar à Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Área invisível de impressão -->
+<div id="recibo-print"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   Estado
+═══════════════════════════════════════════════════════════ */
+let perfilAtual     = null;
+let todosProdutos   = [];
+let itensVenda      = [];
+let produtoFoco     = null;
+let alertaEstoque   = 5;
+let formasPagamento = [];
+let clienteSel      = null;
+let tipoDesc        = 'fixo';
+let isFiado         = false;
+let metodoFocoIdx   = -1;  /* índice do método focado pelas setas */
+
+let cfgLoja = {
+  nome:       'KosmoSystem',
+  cnpj:       '', telefone:  '',
+  endereco:   '', rodape:    'Obrigado pela preferência!',
+  largura:    localStorage.getItem('kosmo_largura')     ?? '74mm',
+  impressora: localStorage.getItem('kosmo_impressora') ?? '',
+  gavetaAuto: localStorage.getItem('kosmo_gaveta_auto') === 'true',
+};
+
+/* ═══════════════════════════════════════════════════════════
+   Init
+═══════════════════════════════════════════════════════════ */
+async function init() {
+  const auth = await verificarAuth(['admin', 'vendedor']);
+  if (!auth) return;
+  perfilAtual = auth.perfil;
+  renderInfoUsuario(auth.perfil);
+  ocultarElementosAdmin(auth.perfil);
+  initSidebar(); marcarNavAtivo();
+  document.getElementById('vendedor-nome-tag').textContent = perfilAtual.nome ?? '—';
+
+  const [prodRes, cfgRes, formasRes] = await Promise.all([
+    db.from('produtos').select('*, categorias(nome)').order('nome'),
+    db.from('configuracoes').select('*'),
+    db.from('formas_pagamento').select('*').eq('ativo', true).order('nome')
+  ]);
+
+  todosProdutos   = prodRes.data   ?? [];
+  formasPagamento = formasRes.data ?? [];
+
+  (cfgRes.data ?? []).forEach(c => {
+    if (c.chave === 'alerta_estoque_baixo') alertaEstoque      = parseInt(c.valor) || 5;
+    if (c.chave === 'nome_loja')            cfgLoja.nome       = c.valor;
+    if (c.chave === 'loja_cnpj')            cfgLoja.cnpj       = c.valor;
+    if (c.chave === 'loja_telefone')        cfgLoja.telefone   = c.valor;
+    if (c.chave === 'loja_endereco')        cfgLoja.endereco   = c.valor;
+    if (c.chave === 'recibo_rodape')        cfgLoja.rodape     = c.valor;
+    if (c.chave === 'recibo_largura')       cfgLoja.largura    = c.valor;
+    if (c.chave === 'recibo_impressora' && !cfgLoja.impressora) cfgLoja.impressora = c.valor;
+  });
+
+  document.documentElement.style.setProperty('--recibo-largura', cfgLoja.largura);
+
+  if (cfgLoja.impressora) {
+    document.getElementById('tag-impressora').style.display = '';
+    document.getElementById('tag-impressora-nome').textContent = cfgLoja.impressora;
+  }
+
+  configurarBusca();
+  configurarAtalhos();
+  configurarClienteModal();
+  focusBusca();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Atalhos globais
+═══════════════════════════════════════════════════════════ */
+function configurarAtalhos() {
+  document.addEventListener('keydown', e => {
+    const mpagAberto = document.getElementById('mpag-overlay').classList.contains('vis');
+
+    if (e.key === 'F2')  { e.preventDefault(); mpagAberto ? finalizarVenda() : abrirModalPag(); }
+    if (e.key === 'F4')  { e.preventDefault(); toggleObs(); }
+    if (e.key === 'F5')  { e.preventDefault(); focusCliente(); }
+    if (e.key === 'Escape') { if (mpagAberto) fecharModalPag(); else ocultarObs(); }
+
+    if (e.key === 'F11' && e.altKey) {
+      e.preventDefault(); acionarGaveta();
+      toast('🗂️ Gaveta aberta!', 'info', 1500);
+    }
+
+    /* Setas navegam nos métodos de pagamento (dentro do modal) */
+    if (mpagAberto && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault();
+      const metodos = document.querySelectorAll('.mpag-metodo');
+      if (!metodos.length) return;
+      metodoFocoIdx = e.key === 'ArrowDown'
+        ? Math.min(metodoFocoIdx + 1, metodos.length - 1)
+        : Math.max(metodoFocoIdx - 1, 0);
+      metodos.forEach((m, i) => m.classList.toggle('foco', i === metodoFocoIdx));
+      metodos[metodoFocoIdx].scrollIntoView({ block: 'nearest' });
+    }
+
+    /* Enter no modal: seleciona método em foco, ou confirma se já completo */
+    if (mpagAberto && e.key === 'Enter') {
+      e.preventDefault();
+      const mFoco = document.querySelector('.mpag-metodo.foco');
+      if (mFoco && !isFiado) {
+        mFoco.click();
+        return;
+      }
+      finalizarVenda();
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Foco / obs
+═══════════════════════════════════════════════════════════ */
+function focusBusca() { document.getElementById('pdv-busca')?.focus(); }
+function focusCliente() { abrirModalPag(); setTimeout(() => document.getElementById('mpag-cli-busca')?.focus(), 120); }
+
+function toggleObs() {
+  const el = document.getElementById('obs-flutuante');
+  el.classList.toggle('vis');
+  if (el.classList.contains('vis')) document.getElementById('obs-campo').focus();
+}
+function ocultarObs() { document.getElementById('obs-flutuante').classList.remove('vis'); }
+
+/* ═══════════════════════════════════════════════════════════
+   Busca de produto
+═══════════════════════════════════════════════════════════ */
+function configurarBusca() {
+  const inp     = document.getElementById('pdv-busca');
+  const sug     = document.getElementById('pdv-sugestoes');
+  const qtdInp  = document.getElementById('pdv-qtd');
+  let sugFocoIdx = -1;
+
+  qtdInp.addEventListener('input', () => {
+    if (!produtoFoco) return;
+    const q = parseInt(qtdInp.value) || 1;
+    document.getElementById('pdv-preco').textContent     = fmt(produtoFoco.preco_venda);
+    document.getElementById('pdv-total-item').textContent = fmt(produtoFoco.preco_venda * q);
+  });
+
+  /* Enter no campo de quantidade → lança */
+  qtdInp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); lancarFoco(); }
+  });
+
+  inp.addEventListener('input', debounce(() => {
+    produtoFoco  = null; sugFocoIdx = -1;
+    limparInfoBusca();
+    const q = inp.value.trim().toLowerCase();
+    if (!q) { sug.classList.remove('vis'); sug.innerHTML = ''; return; }
+
+    const res = todosProdutos.filter(p =>
+      p.nome.toLowerCase().includes(q) ||
+      (p.codigo_barras && p.codigo_barras.includes(q)) ||
+      (p.codigo_extra  && p.codigo_extra.toLowerCase().includes(q) &&
+       p.codigo_extra !== 'NAO_CADASTRADO')
+    ).slice(0, 12);
+
+    const btnNaoCad = `<div class="sug-nao-cad" onclick="abrirNaoCad('${q.replace(/'/g,"\\'")}')">
+      📦 Vender "<strong>${q}</strong>" como produto não cadastrado...
+    </div>`;
+
+    if (!res.length) {
+      sug.innerHTML = `<div style="padding:12px 14px;color:#aaa;font-size:.85rem">Nenhum produto encontrado</div>${btnNaoCad}`;
+    } else {
+      sug.innerHTML = res.map((p, i) => `
+        <div class="sug-item${i === sugFocoIdx ? ' foco' : ''}"
+             data-idx="${i}" onclick="selecionarProduto('${p.id}')">
+          <div>
+            <div class="sug-nome">${p.nome}</div>
+            <div class="sug-cod">${p.codigo_barras ?? ''}</div>
+          </div>
+          <span class="sug-est ${p.estoque <= 0 ? 'est-baixo' : p.estoque <= alertaEstoque ? 'est-aviso' : 'est-ok'}">
+            Est: ${p.estoque}
+          </span>
+          <span class="sug-preco">${fmt(p.preco_venda)}</span>
+        </div>`).join('') + btnNaoCad;
+    }
+    sug.classList.add('vis');
+  }, 160));
+
+  inp.addEventListener('keydown', e => {
+    const items = sug.querySelectorAll('.sug-item');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      sugFocoIdx = Math.min(sugFocoIdx + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('foco', i === sugFocoIdx));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      sugFocoIdx = Math.max(sugFocoIdx - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('foco', i === sugFocoIdx));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      /* Se tem item em foco pelas setas */
+      if (sugFocoIdx >= 0 && items[sugFocoIdx]) { items[sugFocoIdx].click(); return; }
+      /* Se produto já selecionado */
+      if (produtoFoco) { lancarFoco(); return; }
+      /* Primeiro resultado */
+      const primeiro = sug.querySelector('.sug-item');
+      if (primeiro) { primeiro.click(); return; }
+      /* Match exato scanner */
+      const exato = todosProdutos.find(p =>
+        p.codigo_barras === inp.value.trim() || p.codigo_extra === inp.value.trim()
+      );
+      if (exato) { selecionarProduto(exato.id); setTimeout(lancarFoco, 60); }
+    } else if (e.key === 'Escape') {
+      sug.classList.remove('vis');
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.pdv-busca-wrap')) { sug.classList.remove('vis'); sugFocoIdx = -1; }
+  });
+}
+
+function selecionarProduto(id) {
+  const p = todosProdutos.find(x => x.id === id);
+  if (!p) return;
+  produtoFoco = p;
+  document.getElementById('pdv-sugestoes').classList.remove('vis');
+  document.getElementById('pdv-busca').value = p.nome;
+  document.getElementById('pdv-qtd').value   = '1';
+  document.getElementById('pdv-preco').textContent      = fmt(p.preco_venda);
+  document.getElementById('pdv-total-item').textContent = fmt(p.preco_venda);
+  document.getElementById('pdv-qtd').focus();
+  document.getElementById('pdv-qtd').select();
+}
+
+function limparInfoBusca() {
+  document.getElementById('pdv-preco').textContent     = '—';
+  document.getElementById('pdv-total-item').textContent = '—';
+}
+
+function lancarFoco() {
+  if (!produtoFoco) { toast('Selecione um produto.', 'aviso'); return; }
+  const qtd = parseInt(document.getElementById('pdv-qtd').value) || 1;
+  adicionarItem(produtoFoco, qtd);
+  document.getElementById('pdv-busca').value = '';
+  document.getElementById('pdv-qtd').value   = '1';
+  produtoFoco = null; limparInfoBusca(); focusBusca();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Produto não cadastrado
+═══════════════════════════════════════════════════════════ */
+function abrirNaoCad(nome = '') {
+  document.getElementById('pdv-sugestoes').classList.remove('vis');
+  document.getElementById('nc-nome').value  = nome;
+  document.getElementById('nc-preco').value = '';
+  document.getElementById('nc-qtd').value   = document.getElementById('pdv-qtd').value || '1';
+  abrirModal('modal-nao-cad');
+  setTimeout(() => (nome ? document.getElementById('nc-preco') : document.getElementById('nc-nome')).focus(), 100);
+}
+
+function confirmarNaoCad() {
+  const nome  = document.getElementById('nc-nome').value.trim();
+  const preco = parseFloat(document.getElementById('nc-preco').value);
+  const qtd   = parseInt(document.getElementById('nc-qtd').value) || 1;
+  if (!nome)  { toast('Informe o nome!', 'aviso'); return; }
+  if (!preco || preco <= 0) { toast('Informe o preço!', 'aviso'); return; }
+
+  itensVenda.push({ id: 'NC_' + Date.now(), nome, preco, custo: 0, qtd, estoque: 99999, nao_cadastrado: true });
+  fecharModal('modal-nao-cad');
+  document.getElementById('pdv-busca').value = '';
+  limparInfoBusca(); renderItens();
+  toast(`"${nome}" adicionado.`, 'sucesso');
+  focusBusca();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Itens
+═══════════════════════════════════════════════════════════ */
+function adicionarItem(prod, qtd = 1) {
+  if (prod.estoque <= 0) { toast('Produto sem estoque!', 'aviso'); return; }
+  const ex = itensVenda.find(i => i.id === prod.id);
+  if (ex) {
+    ex.qtd = Math.min(ex.qtd + qtd, prod.estoque);
+  } else {
+    itensVenda.push({ id: prod.id, nome: prod.nome, preco: prod.preco_venda,
+      custo: prod.preco_custo ?? 0, qtd: Math.min(qtd, prod.estoque), estoque: prod.estoque });
+  }
+  renderItens();
+}
+
+function removerItem(id) { itensVenda = itensVenda.filter(i => i.id !== id); renderItens(); }
+
+function alterarQtdItem(id, v) {
+  const item = itensVenda.find(i => i.id === id);
+  if (!item) return;
+  const n = parseInt(v);
+  if (!isNaN(n) && n >= 1) item.qtd = Math.min(n, item.estoque);
+  else if (n === 0 || v === '') removerItem(id);
+  renderItens();
+}
+
+function renderItens() {
+  const tbody = document.getElementById('tbody-itens');
+  const vazia = document.getElementById('linha-vazia');
+  tbody.querySelectorAll('tr:not(#linha-vazia)').forEach(r => r.remove());
+
+  if (!itensVenda.length) { vazia.style.display = ''; atualizarTotal(0, 0); return; }
+  vazia.style.display = 'none';
+
+  let sub = 0, qtdTotal = 0;
+  itensVenda.forEach((item, idx) => {
+    const tot = item.preco * item.qtd;
+    sub += tot; qtdTotal += item.qtd;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-num">${idx + 1}</td>
+      <td>${item.nome}${item.nao_cadastrado ? '<span class="badge-nao-cad">Não cad.</span>' : ''}</td>
+      <td class="td-qtd">
+        <input class="input-qtd-item" type="number" value="${item.qtd}"
+               min="0" max="${item.estoque}"
+               onchange="alterarQtdItem('${item.id}', this.value)"
+               onclick="this.select()"
+               onkeydown="if(event.key==='Enter'){event.target.blur();focusBusca();}">
+      </td>
+      <td class="td-preco">${fmt(item.preco)}</td>
+      <td class="td-total">${fmt(tot)}</td>
+      <td class="td-acao"><button class="btn-rem" onclick="removerItem('${item.id}')" title="Remover">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+  atualizarTotal(sub, qtdTotal);
+}
+
+function atualizarTotal(sub, qtd) {
+  document.getElementById('total-rodape').textContent = `Total = ${fmt(sub)}`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Limpar venda
+═══════════════════════════════════════════════════════════ */
+function limparVenda() {
+  itensVenda = []; clienteSel = null; produtoFoco = null;
+  document.getElementById('pdv-busca').value = '';
+  document.getElementById('pdv-qtd').value   = '1';
+  document.getElementById('obs-campo').value = '';
+  ocultarObs(); limparInfoBusca(); renderItens(); focusBusca();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Modal de pagamento
+═══════════════════════════════════════════════════════════ */
+function abrirModalPag() {
+  if (!itensVenda.length) { toast('Adicione produtos!', 'aviso'); return; }
+  isFiado = false; tipoDesc = 'fixo'; metodoFocoIdx = -1;
+  document.getElementById('cb-fiado').checked  = false;
+  document.getElementById('mpag-desc').value   = '';
+  document.getElementById('btn-fixo').classList.add('at');
+  document.getElementById('btn-pct').classList.remove('at');
+  document.getElementById('mpag-desc-info').textContent = '';
+
+  /* Impressora no modal */
+  document.getElementById('mpag-impressora').value =
+    localStorage.getItem('kosmo_impressora') ?? cfgLoja.impressora ?? '';
+
+  /* Sincroniza cliente se já havia seleção */
+  if (clienteSel) {
+    document.getElementById('mpag-cli-busca').value = clienteSel.nome;
+    const sel = document.getElementById('mpag-cli-sel');
+    sel.textContent  = `✓ ${clienteSel.nome}`;
+    sel.style.display = 'block';
+  } else {
+    document.getElementById('mpag-cli-busca').value = '';
+    document.getElementById('mpag-cli-sel').style.display = 'none';
+  }
+
+  renderMetodos();
+  recalcularPag();
+  document.getElementById('mpag-overlay').classList.add('vis');
+  /* Foca primeiro método */
+  setTimeout(() => {
+    const m = document.querySelector('.mpag-metodo');
+    if (m) { metodoFocoIdx = 0; m.classList.add('foco'); }
+  }, 80);
+}
+
+function fecharModalPag() {
+  document.getElementById('mpag-overlay').classList.remove('vis');
+  focusBusca();
+}
+
+function renderMetodos() {
+  const c = document.getElementById('mpag-metodos');
+  if (!formasPagamento.length) { c.innerHTML = '<p style="color:#aaa;font-size:.85rem">Nenhuma forma ativa.</p>'; return; }
+  c.innerHTML = formasPagamento.map(fp => `
+    <div class="mpag-metodo" id="mpag-m-${fp.id}" tabindex="0"
+         onclick="selecionarMetodo(${fp.id}, '${fp.nome.replace(/'/g,"\\'")}')">
+      <span class="mpag-metodo-nome">${fp.nome}</span>
+      <input class="mpag-metodo-val" type="number" id="mpag-v-${fp.id}"
+             placeholder="0,00" min="0" step="0.01"
+             onclick="event.stopPropagation()"
+             onkeydown="metodoValKeydown(event, ${fp.id})"
+             oninput="recalcularPag()">
+    </div>`).join('');
+}
+
+function metodoValKeydown(e, id) {
+  if (e.key === 'Enter') {
+    e.preventDefault(); e.stopPropagation();
+    /* Avança para o próximo método ou para o campo de desconto */
+    const idx = formasPagamento.findIndex(fp => fp.id === id);
+    if (idx < formasPagamento.length - 1) {
+      const prox = formasPagamento[idx + 1];
+      document.getElementById(`mpag-m-${prox.id}`)?.click();
+    } else {
+      document.getElementById('mpag-desc')?.focus();
+    }
+  }
+}
+
+function selecionarMetodo(id, nome) {
+  if (isFiado) return;
+  const el  = document.getElementById(`mpag-m-${id}`);
+  const inp = document.getElementById(`mpag-v-${id}`);
+
+  el.classList.add('ativo');
+  inp.classList.add('vis');
+
+  /* Atualiza índice de foco pelas setas */
+  metodoFocoIdx = formasPagamento.findIndex(fp => fp.id === id);
+  document.querySelectorAll('.mpag-metodo').forEach((m, i) => m.classList.toggle('foco', i === metodoFocoIdx));
+
+  if (!inp.value || parseFloat(inp.value) === 0) {
+    const falta = Math.max(0, calcTotalDesc() - somarPago());
+    if (falta > 0.005) { inp.value = falta.toFixed(2); }
+  }
+  inp.focus(); inp.select();
+  recalcularPag();
+}
+
+function toggleFiado() {
+  isFiado = document.getElementById('cb-fiado').checked;
+  document.querySelectorAll('.mpag-metodo').forEach(el => {
+    el.style.opacity = isFiado ? '.4' : '1';
+    el.style.pointerEvents = isFiado ? 'none' : '';
+  });
+  if (isFiado) document.querySelectorAll('.mpag-metodo-val').forEach(i => { i.value = ''; });
+  recalcularPag();
+}
+
+function calcSub()       { return itensVenda.reduce((s, i) => s + i.preco * i.qtd, 0); }
+function calcTotalDesc() {
+  const sub  = calcSub();
+  const desc = parseFloat(document.getElementById('mpag-desc')?.value) || 0;
+  const d    = tipoDesc === 'pct' ? sub * (desc / 100) : desc;
+  return Math.max(0, sub - d);
+}
+function somarPago() {
+  return formasPagamento.reduce((s, fp) => {
+    const v = parseFloat(document.getElementById(`mpag-v-${fp.id}`)?.value || 0);
+    return s + (isNaN(v) ? 0 : v);
+  }, 0);
+}
+
+function recalcularPag() {
+  const total   = calcTotalDesc();
+  const sub     = calcSub();
+  const desc    = sub - total;
+  document.getElementById('mpag-total-val').textContent = fmt(total);
+  document.getElementById('mpag-total-sub').textContent = desc > 0 ? `(subtotal ${fmt(sub)} - desconto ${fmt(desc)})` : '';
+
+  /* Info desconto */
+  const descRaw = parseFloat(document.getElementById('mpag-desc')?.value) || 0;
+  const infoEl  = document.getElementById('mpag-desc-info');
+  infoEl.textContent = (descRaw > 0 && tipoDesc === 'pct')
+    ? `= ${fmt(sub * descRaw / 100)}`
+    : descRaw > 0 ? `${fmt(descRaw)} de desconto` : '';
+
+  const pago     = isFiado ? 0 : somarPago();
+  const restante = total - pago;
+  const restEl   = document.getElementById('mpag-restante-val');
+  restEl.textContent = `${fmt(pago)} / ${fmt(total)}`;
+  restEl.className   = restante <= 0.005 ? 'rest-ok' : 'rest-falta';
+
+  /* Troco */
+  const dinFP = formasPagamento.find(fp => fp.nome.toLowerCase().includes('dinheiro'));
+  const troco = dinFP ? Math.max(0, (parseFloat(document.getElementById(`mpag-v-${dinFP.id}`)?.value) || 0) - total) : 0;
+  const trocoEl = document.getElementById('mpag-troco');
+  if (troco > 0.005) { trocoEl.classList.add('vis'); document.getElementById('mpag-troco-val').textContent = fmt(troco); }
+  else trocoEl.classList.remove('vis');
+}
+
+function setTipoDesc(tipo) {
+  tipoDesc = tipo;
+  document.getElementById('btn-fixo').classList.toggle('at', tipo === 'fixo');
+  document.getElementById('btn-pct').classList.toggle('at',  tipo === 'pct');
+  recalcularPag();
+}
+
+function salvarImpressora() {
+  const nome = document.getElementById('mpag-impressora').value.trim();
+  localStorage.setItem('kosmo_impressora', nome);
+  cfgLoja.impressora = nome;
+  if (nome) {
+    document.getElementById('tag-impressora').style.display = '';
+    document.getElementById('tag-impressora-nome').textContent = nome;
+  }
+}
+
+/* ── Cliente no modal ─── */
+function configurarClienteModal() {
+  const inp  = document.getElementById('mpag-cli-busca');
+  const lista = document.getElementById('mpag-cli-sug');
+
+  inp.addEventListener('input', debounce(async () => {
+    const q = inp.value.trim();
+    clienteSel = null;
+    document.getElementById('mpag-cli-sel').style.display = 'none';
+    if (q.length < 2) { lista.classList.remove('vis'); return; }
+
+    const { data } = await db.from('clientes').select('id,nome,cpf')
+      .or(`nome.ilike.%${q}%,cpf.ilike.%${q}%`).limit(6);
+
+    if (!data?.length) { lista.classList.remove('vis'); return; }
+    lista.innerHTML = data.map(c => `
+      <div class="mpag-cli-item"
+           onclick="selecionarCliModal('${c.id}','${c.nome.replace(/'/g,"\\'")}','${c.cpf ?? ''}')">
+        ${c.nome}${c.cpf ? ` <span style="color:#aaa">· ${c.cpf}</span>` : ''}
+      </div>`).join('');
+    lista.classList.add('vis');
+  }, 280));
+
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const prim = lista.querySelector('.mpag-cli-item');
+      if (prim) prim.click();
+      else document.querySelector('.mpag-metodo')?.click();
+    }
+    if (e.key === 'Escape') lista.classList.remove('vis');
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.mpag-cli-wrap') && !e.target.closest('#mpag-cli-sug'))
+      lista.classList.remove('vis');
+  });
+}
+
+function selecionarCliModal(id, nome, cpf) {
+  clienteSel = { id, nome, cpf };
+  document.getElementById('mpag-cli-busca').value = nome;
+  document.getElementById('mpag-cli-sug').classList.remove('vis');
+  const el = document.getElementById('mpag-cli-sel');
+  el.textContent  = `✓ ${nome}${cpf ? ' · ' + cpf : ''}`;
+  el.style.display = 'block';
+  /* Avança para o primeiro método de pagamento */
+  setTimeout(() => document.querySelector('.mpag-metodo')?.click(), 60);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Finalizar venda
+═══════════════════════════════════════════════════════════ */
+async function finalizarVenda() {
+  if (!itensVenda.length) { toast('Carrinho vazio!', 'aviso'); return; }
+
+  if (!isFiado) {
+    const total = calcTotalDesc();
+    const pago  = somarPago();
+    if (pago < total - 0.005) {
+      toast(`Falta ${fmt(total - pago)} para completar!`, 'aviso');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('mpag-btn-ok');
+  btn.disabled = true; btn.textContent = 'Processando...';
+
+  const sub      = calcSub();
+  const descRaw  = parseFloat(document.getElementById('mpag-desc').value) || 0;
+  const desconto = tipoDesc === 'pct' ? sub * (descRaw / 100) : descRaw;
+  const total    = Math.max(0, sub - desconto);
+  const obs      = document.getElementById('obs-campo').value.trim() || null;
+
+  let pagNomeStr, pagIdPrincipal;
+  if (isFiado) {
+    pagNomeStr     = 'Fiado';
+    pagIdPrincipal = null;
+  } else {
+    const usados   = formasPagamento.filter(fp => (parseFloat(document.getElementById(`mpag-v-${fp.id}`)?.value) || 0) > 0.005);
+    pagNomeStr     = usados.map(fp => fp.nome).join(' + ') || '—';
+    pagIdPrincipal = usados[0]?.id ?? null;
+  }
+
+  try {
+    /* 1. Cadastra produtos não cadastrados */
+    for (const item of itensVenda.filter(i => i.nao_cadastrado)) {
+      const { data: np, error } = await db.from('produtos')
+        .insert({ nome: item.nome, preco_venda: item.preco, preco_custo: 0,
+                  estoque: 0, codigo_extra: 'NAO_CADASTRADO' })
+        .select().single();
+      if (!error && np) {
+        item.id = np.id; item.nao_cadastrado = false;
+        todosProdutos.push({ ...np, categorias: null });
+      }
+    }
+
+    /* 2. Insere venda */
+    const { data: venda, error: ev } = await db.from('vendas').insert({
+      vendedor_id: perfilAtual.id, vendedor_nome: perfilAtual.nome,
+      cliente_id:  clienteSel?.id ?? null, cliente_nome: clienteSel?.nome ?? null,
+      forma_pagamento_id: pagIdPrincipal, forma_pagamento_nome: pagNomeStr,
+      desconto, tipo_desconto: tipoDesc, subtotal: sub, total,
+      fiado: isFiado, observacao: obs
+    }).select().single();
+    if (ev) throw ev;
+
+    /* 3. Insere itens */
+    const itens = itensVenda.map(i => ({
+      venda_id: venda.id,
+      produto_id:           i.id?.startsWith?.('NC_') ? null : i.id,
+      produto_nome:         i.nome,
+      quantidade:           i.qtd,
+      preco_unitario:       i.preco,
+      preco_custo_unitario: i.custo,
+      subtotal:             i.preco * i.qtd
+    }));
+    const { error: ei } = await db.from('itens_venda').insert(itens);
+    if (ei) throw ei;
+
+    /* 4. Subtrai estoque */
+    for (const item of itensVenda) {
+      if (!item.id || item.id.startsWith?.('NC_')) continue;
+      await db.rpc('subtrair_estoque', { p_produto_id: item.id, p_quantidade: item.qtd });
+      const p = todosProdutos.find(x => x.id === item.id);
+      if (p) p.estoque = Math.max(0, p.estoque - item.qtd);
+    }
+
+    /* 5. Imprime se marcado */
+    if (document.getElementById('cb-imprimir').checked)
+      imprimirRecibo(venda, itens, sub, desconto, total, pagNomeStr);
+
+    toast('✅ Venda concluída!', 'sucesso');
+    fecharModalPag();
+    limparVenda();
+
+  } catch (err) {
+    console.error(err);
+    toast('Erro: ' + err.message, 'erro');
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ F2 — CONCLUIR VENDA';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Impressão — formato cupom 74mm
+═══════════════════════════════════════════════════════════ */
+function imprimirRecibo(venda, itens, sub, desconto, total, pagNome) {
+  const agora = new Date().toLocaleString('pt-BR');
+  const gavetaAuto = cfgLoja.gavetaAuto || localStorage.getItem('kosmo_gaveta_auto') === 'true';
+  const temDinheiro = pagNome.toLowerCase().includes('dinheiro') || venda.fiado;
+  const cmdGaveta   = (gavetaAuto && temDinheiro)
+    ? `<span style="font-family:monospace;font-size:1px;line-height:0;color:transparent">\x1b\x70\x00\x19\xfa</span>` : '';
+
+  document.getElementById('recibo-print').innerHTML = `${cmdGaveta}
+    <div class="r-header-row">
+      <div>
+        <div class="r-title">${cfgLoja.nome}</div>
+        ${cfgLoja.cnpj     ? `<div class="r-sm">CNPJ: ${cfgLoja.cnpj}</div>`         : ''}
+        ${cfgLoja.telefone ? `<div class="r-sm">Contato: ${cfgLoja.telefone}</div>`  : ''}
+        ${cfgLoja.endereco ? `<div class="r-sm">Endereço: ${cfgLoja.endereco}</div>` : ''}
+        <div class="r-sm">Cliente: ${clienteSel?.nome ?? ''}</div>
+      </div>
+      <div class="r-sm" style="text-align:right;white-space:nowrap">${agora}</div>
+    </div>
+    <hr class="r-hr">
+    <div class="r-centro r-bold" style="margin:2px 0">Venda</div>
+    <table>
+      <thead><tr><th>Descrição / Quantidade X Unitário</th><th>Total</th></tr></thead>
+      <tbody>${itens.map(i => `
+        <tr>
+          <td><div>${i.produto_nome}</div><div>${i.quantidade} X &nbsp;${fmt(i.preco_unitario)}</div></td>
+          <td>${fmt(i.subtotal)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <hr class="r-hr">
+    ${desconto > 0 ? `<div class="r-linha r-sm"><span>Subtotal</span><span>${fmt(sub)}</span></div>
+      <div class="r-linha r-sm"><span>Desconto</span><span>-${fmt(desconto)}</span></div>` : ''}
+    <div class="r-total-row"><span>Total a Pagar</span><span>${fmt(total)}</span></div>
+    <div class="r-linha"><span>${pagNome}</span><span>${fmt(total)}</span></div>
+    ${venda.fiado ? '<div class="r-centro r-bold" style="margin:3px 0">⚠ FIADO — PAGAR DEPOIS</div>' : ''}
+    ${venda.observacao ? `<div class="r-sm">Obs: ${venda.observacao}</div>` : ''}
+    <hr class="r-dot">
+    <div class="r-centro r-sm">${cfgLoja.rodape}</div>`;
+
+  window.print();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Gaveta
+═══════════════════════════════════════════════════════════ */
+function acionarGaveta() {
+  const prev = document.getElementById('recibo-print').innerHTML;
+  document.getElementById('recibo-print').innerHTML =
+    `<span style="font-family:monospace;font-size:1px;line-height:0;color:transparent">\x1b\x70\x00\x19\xfa</span>`;
+  window.print();
+  setTimeout(() => { document.getElementById('recibo-print').innerHTML = prev; }, 600);
+}
+
+init();
+</script>
+</body>
+</html>

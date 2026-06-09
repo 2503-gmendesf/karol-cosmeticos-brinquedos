@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KosmoSystem — Configurações</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>Kosmo<span class="acento">System</span></h2>
+    <small>Gestão de Cosméticos</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="relatorios.html"    class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="pdv.html"           class="nav-item"><span class="nav-icon">🛒</span> PDV — Vendas</a>
+    <a href="historico.html"     class="nav-item"><span class="nav-icon">🧾</span> Histórico</a>
+    <a href="produtos.html"      class="nav-item"><span class="nav-icon">📦</span> Produtos</a>
+    <a href="configuracoes.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurações</a>
+  </nav>
+  <div class="sidebar-footer">KosmoSystem v1.0</div>
+</aside>
+
+<div class="main-wrapper">
+  <header class="header">
+    <div class="header-esq">
+      <button class="hamburguer" id="hamburguer">☰</button>
+      <span class="header-titulo">⚙️ Configurações</span>
+    </div>
+    <div class="header-dir">
+      <div class="usuario-info">
+        <span id="usuario-nome">—</span>
+        <span id="usuario-perfil">—</span>
+      </div>
+      <button class="btn-sair" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="conteudo">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+      <!-- Formas de pagamento -->
+      <div class="card">
+        <div class="card-titulo">💳 Formas de Pagamento</div>
+        <div id="lista-formas" style="margin-bottom:14px">Carregando...</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="nova-forma" class="input" placeholder="Nova forma de pagamento..." style="flex:1">
+          <button class="btn btn-primario" onclick="adicionarForma()">Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Categorias -->
+      <div class="card">
+        <div class="card-titulo">🏷 Categorias de Produtos</div>
+        <div id="lista-categorias" style="margin-bottom:14px">Carregando...</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="nova-categoria" class="input" placeholder="Nova categoria..." style="flex:1">
+          <button class="btn btn-primario" onclick="adicionarCategoria()">Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Usuários -->
+      <div class="card">
+        <div class="card-titulo">👥 Usuários do Sistema</div>
+        <div id="lista-usuarios" style="margin-bottom:14px">Carregando...</div>
+        <button class="btn btn-primario" onclick="abrirModal('modal-usuario')">
+          + Novo Usuário
+        </button>
+      </div>
+
+      <!-- Clientes -->
+      <div class="card">
+        <div class="card-titulo">👤 Clientes Cadastrados</div>
+        <div class="filtros" style="margin-bottom:12px">
+          <input type="text" id="busca-cliente" class="input"
+                 placeholder="🔍 Buscar cliente..." style="max-width:220px">
+        </div>
+        <div id="lista-clientes" style="margin-bottom:14px;max-height:280px;overflow-y:auto">
+          Carregando...
+        </div>
+        <button class="btn btn-primario" onclick="abrirModal('modal-cliente')">
+          + Novo Cliente
+        </button>
+      </div>
+
+      <!-- Configurações gerais -->
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-titulo">🔧 Configurações Gerais</div>
+        <div class="linha-2">
+          <div class="grupo">
+            <label class="label" for="nome-loja">Nome da Loja</label>
+            <input type="text" id="nome-loja" class="input" placeholder="Karol Cosméticos">
+          </div>
+          <div class="grupo">
+            <label class="label" for="loja-cnpj">CNPJ</label>
+            <input type="text" id="loja-cnpj" class="input" placeholder="00.000.000/0000-00">
+          </div>
+          <div class="grupo">
+            <label class="label" for="loja-telefone">Contato / Telefone</label>
+            <input type="text" id="loja-telefone" class="input" placeholder="(31) 99999-9999">
+          </div>
+          <div class="grupo">
+            <label class="label" for="alerta-estoque">Limiar de Estoque Baixo</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="alerta-estoque" class="input"
+                     placeholder="5" min="1" style="max-width:120px">
+              <span style="font-size:.82rem;color:var(--muted)">unidades</span>
+            </div>
+          </div>
+        </div>
+        <div class="grupo" style="margin-top:10px">
+          <label class="label" for="loja-endereco">Endereço</label>
+          <input type="text" id="loja-endereco" class="input"
+                 placeholder="Av. Exemplo, 123 - Bairro - Cidade">
+        </div>
+        <div class="grupo" style="margin-top:10px">
+          <label class="label" for="recibo-rodape">Mensagem de Rodapé do Recibo</label>
+          <input type="text" id="recibo-rodape" class="input"
+                 placeholder="Favor guardar o cupom para eventual troca. Obrigado pela preferência!">
+        </div>
+
+        <!-- Impressora de recibo -->
+        <div style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:14px;margin-top:14px">
+          <div style="font-weight:600;margin-bottom:10px;font-size:.9rem">🖨️ Impressora de Recibo</div>
+          <div class="linha-2">
+            <div class="grupo">
+              <label class="label">Nome da Impressora (referência)</label>
+              <input type="text" id="recibo-impressora" class="input"
+                     placeholder="Ex: MP-4200 TH">
+              <div class="dica">Salvo apenas como referência. Para garantir que imprime nesta impressora, defina-a como padrão no Windows.</div>
+            </div>
+            <div class="grupo">
+              <label class="label">Largura do papel</label>
+              <select id="recibo-largura" class="input">
+                <option value="74mm">74mm (Modelo 203e)</option>
+                <option value="80mm">80mm</option>
+                <option value="58mm">58mm</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:#fff8e1;border:1px solid #ffd54f;border-radius:6px;padding:10px;font-size:.8rem;color:#7f6000;margin-top:8px">
+            ⚙️ <strong>Como configurar:</strong> No Windows, acesse <em>Impressoras e Scanners</em>, clique na sua impressora térmica → <em>Gerenciar</em> → <em>Definir como padrão</em>. Assim o sistema sempre imprimirá nela automaticamente.
+          </div>
+        </div>
+
+        <!-- Gaveta de dinheiro -->
+        <div style="background:#f0fff4;border:1px solid #b7ebc7;border-radius:8px;padding:14px;margin-top:14px">
+          <div style="font-weight:600;margin-bottom:10px;font-size:.9rem">🗂️ Gaveta de Dinheiro</div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer">
+              <input type="checkbox" id="gaveta-auto" style="width:16px;height:16px;accent-color:#27ae60">
+              Abrir gaveta automaticamente ao concluir venda em dinheiro
+            </label>
+            <button class="btn btn-sec btn-sm" onclick="testarGaveta()">🗂️ Testar Abertura</button>
+          </div>
+          <div class="dica" style="margin-top:8px">
+            A gaveta é aberta via comando ESC/POS enviado junto com a impressão. Certifique-se de que a gaveta está conectada à impressora.
+          </div>
+        </div>
+
+        <button class="btn btn-primario" onclick="salvarConfig()" style="margin-top:16px">
+          💾 Salvar Configurações
+        </button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Novo usuário -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-titulo">Novo Usuário</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-usuario')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="grupo">
+        <label class="label">Nome completo *</label>
+        <input type="text" id="usr-nome" class="input" placeholder="Nome do usuário">
+      </div>
+      <div class="grupo">
+        <label class="label">E-mail *</label>
+        <input type="email" id="usr-email" class="input" placeholder="email@exemplo.com">
+      </div>
+      <div class="grupo">
+        <label class="label">Senha *</label>
+        <input type="password" id="usr-senha" class="input"
+               placeholder="Mínimo 6 caracteres" minlength="6">
+      </div>
+      <div class="grupo">
+        <label class="label">Perfil *</label>
+        <select id="usr-perfil" class="input">
+          <option value="vendedor">Vendedor — acesso ao PDV e produtos</option>
+          <option value="admin">Administrador — acesso total</option>
+        </select>
+      </div>
+      <div style="background:#fef9e7;border:1px solid #f9ca24;border-radius:8px;
+                  padding:12px;font-size:.82rem;color:#7f6000">
+        ⚠️ Compartilhe o e-mail e a senha com o usuário de forma segura.
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primario" id="btn-criar-usr" onclick="criarUsuario()">
+        Criar Usuário
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Renomear item (forma/categoria) -->
+<div class="modal-overlay" id="modal-renomear">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-titulo" id="renomear-titulo">Renomear</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-renomear')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="grupo">
+        <label class="label">Nome</label>
+        <input type="text" id="renomear-nome" class="input">
+        <input type="hidden" id="renomear-id">
+        <input type="hidden" id="renomear-tabela">
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec" onclick="fecharModal('modal-renomear')">Cancelar</button>
+      <button class="btn btn-primario" onclick="salvarRenomear()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-titulo" id="modal-cliente-titulo">Novo Cliente</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-cliente')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <input type="hidden" id="cli-id">
+      <div class="grupo">
+        <label class="label">Nome *</label>
+        <input type="text" id="cli-nome" class="input" placeholder="Nome completo">
+      </div>
+      <div class="linha-2">
+        <div class="grupo">
+          <label class="label">CPF</label>
+          <input type="text" id="cli-cpf" class="input" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="grupo">
+          <label class="label">Telefone</label>
+          <input type="text" id="cli-telefone" class="input" placeholder="(00) 00000-0000" maxlength="15">
+        </div>
+      </div>
+      <div class="grupo">
+        <label class="label">E-mail</label>
+        <input type="email" id="cli-email" class="input" placeholder="email@exemplo.com">
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec" onclick="fecharModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primario" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+async function init() {
+  const auth = await verificarAuth(['admin']);
+  if (!auth) return;
+  renderInfoUsuario(auth.perfil);
+  initSidebar();
+  marcarNavAtivo();
+
+  await Promise.all([
+    carregarFormas(), carregarCategorias(),
+    carregarUsuarios(), carregarClientes(), carregarConfig()
+  ]);
+
+  /* Máscaras de CPF e telefone */
+  document.getElementById('cli-cpf').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, '$1.$2')
+         .replace(/(\d{3})(\d)/, '$1.$2')
+         .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    this.value = v;
+  });
+  document.getElementById('cli-telefone').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    v = v.replace(/(\d{2})(\d)/, '($1) $2')
+         .replace(/(\d{5})(\d)/, '$1-$2');
+    this.value = v;
+  });
+
+  /* Enter para adicionar */
+  document.getElementById('nova-forma').addEventListener('keydown',
+    e => { if (e.key === 'Enter') adicionarForma(); });
+  document.getElementById('nova-categoria').addEventListener('keydown',
+    e => { if (e.key === 'Enter') adicionarCategoria(); });
+
+  /* Busca de cliente */
+  document.getElementById('busca-cliente').addEventListener('input',
+    debounce(carregarClientes, 300));
+}
+
+/* ── FORMAS DE PAGAMENTO ──────────────────────────────── */
+async function carregarFormas() {
+  const { data } = await db.from('formas_pagamento').select('*').order('nome');
+  const el = document.getElementById('lista-formas');
+
+  if (!data?.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhuma forma cadastrada.</p>';
+    return;
+  }
+
+  el.innerHTML = data.map(fp => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--borda)">
+      <span style="flex:1;font-size:.875rem">${fp.nome}</span>
+      <span class="badge ${fp.ativo ? 'badge-sucesso' : 'badge-cinza'}">
+        ${fp.ativo ? 'Ativo' : 'Inativo'}
+      </span>
+      <button class="btn btn-sm btn-sec"
+              onclick="alternarForma(${fp.id}, ${fp.ativo})">
+        ${fp.ativo ? 'Desativar' : 'Ativar'}
+      </button>
+      <button class="btn btn-sm btn-sec"
+              onclick="renomear('formas_pagamento', ${fp.id}, '${fp.nome.replace(/'/g,"\\'")}', 'Renomear Forma')">
+        ✏️
+      </button>
+      <button class="btn btn-sm btn-perigo"
+              onclick="excluirItem('formas_pagamento', ${fp.id}, carregarFormas)">🗑</button>
+    </div>
+  `).join('');
+}
+
+async function adicionarForma() {
+  const nome = document.getElementById('nova-forma').value.trim();
+  if (!nome) { toast('Informe o nome da forma de pagamento.', 'aviso'); return; }
+  const { error } = await db.from('formas_pagamento').insert({ nome, ativo: true });
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+  document.getElementById('nova-forma').value = '';
+  toast('Forma de pagamento adicionada!', 'sucesso');
+  await carregarFormas();
+}
+
+async function alternarForma(id, ativo) {
+  await db.from('formas_pagamento').update({ ativo: !ativo }).eq('id', id);
+  await carregarFormas();
+}
+
+/* ── CATEGORIAS ───────────────────────────────────────── */
+async function carregarCategorias() {
+  const { data } = await db.from('categorias').select('*').order('nome');
+  const el = document.getElementById('lista-categorias');
+
+  if (!data?.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhuma categoria cadastrada.</p>';
+    return;
+  }
+
+  el.innerHTML = data.map(c => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--borda)">
+      <span style="flex:1;font-size:.875rem">🏷 ${c.nome}</span>
+      <button class="btn btn-sm btn-sec"
+              onclick="renomear('categorias', ${c.id}, '${c.nome.replace(/'/g,"\\'")}', 'Renomear Categoria')">
+        ✏️
+      </button>
+      <button class="btn btn-sm btn-perigo"
+              onclick="excluirItem('categorias', ${c.id}, carregarCategorias)">🗑</button>
+    </div>
+  `).join('');
+}
+
+async function adicionarCategoria() {
+  const nome = document.getElementById('nova-categoria').value.trim();
+  if (!nome) { toast('Informe o nome da categoria.', 'aviso'); return; }
+  const { error } = await db.from('categorias').insert({ nome });
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+  document.getElementById('nova-categoria').value = '';
+  toast('Categoria adicionada!', 'sucesso');
+  await carregarCategorias();
+}
+
+/* ── RENOMEAR (forma ou categoria) ───────────────────── */
+function renomear(tabela, id, nomeAtual, titulo) {
+  document.getElementById('renomear-tabela').value = tabela;
+  document.getElementById('renomear-id').value     = id;
+  document.getElementById('renomear-nome').value   = nomeAtual;
+  document.getElementById('renomear-titulo').textContent = titulo;
+  abrirModal('modal-renomear');
+}
+
+async function salvarRenomear() {
+  const tabela = document.getElementById('renomear-tabela').value;
+  const id     = document.getElementById('renomear-id').value;
+  const nome   = document.getElementById('renomear-nome').value.trim();
+  if (!nome) { toast('Informe o nome.', 'aviso'); return; }
+
+  const { error } = await db.from(tabela).update({ nome }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+
+  toast('Salvo!', 'sucesso');
+  fecharModal('modal-renomear');
+  if (tabela === 'categorias') await carregarCategorias();
+  else                          await carregarFormas();
+}
+
+async function excluirItem(tabela, id, recarregarFn) {
+  if (!confirm('Confirma a exclusão?')) return;
+  const { error } = await db.from(tabela).delete().eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+  toast('Excluído!', 'sucesso');
+  await recarregarFn();
+}
+
+/* ── USUÁRIOS ─────────────────────────────────────────── */
+async function carregarUsuarios() {
+  const { data } = await db.from('profiles').select('*').order('nome');
+  const el = document.getElementById('lista-usuarios');
+
+  if (!data?.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum usuário cadastrado.</p>';
+    return;
+  }
+
+  el.innerHTML = data.map(u => `
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--borda)">
+      <div style="flex:1">
+        <div style="font-size:.875rem;font-weight:500">${u.nome}</div>
+      </div>
+      <span class="badge ${u.perfil === 'admin' ? 'badge-perigo' : 'badge-info'}">
+        ${u.perfil === 'admin' ? 'Admin' : 'Vendedor'}
+      </span>
+      <button class="btn btn-sm btn-sec"
+              onclick="alternarPerfil('${u.id}', '${u.perfil}')">
+        ${u.perfil === 'admin' ? '→ Vendedor' : '→ Admin'}
+      </button>
+    </div>
+  `).join('');
+}
+
+async function alternarPerfil(id, perfilAtual) {
+  const novoPerfil = perfilAtual === 'admin' ? 'vendedor' : 'admin';
+  if (!confirm(`Alterar perfil para ${novoPerfil}?`)) return;
+  const { error } = await db.from('profiles').update({ perfil: novoPerfil }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+  toast('Perfil atualizado!', 'sucesso');
+  await carregarUsuarios();
+}
+
+async function criarUsuario() {
+  const nome  = document.getElementById('usr-nome').value.trim();
+  const email = document.getElementById('usr-email').value.trim();
+  const senha = document.getElementById('usr-senha').value;
+  const perfil = document.getElementById('usr-perfil').value;
+
+  if (!nome || !email || !senha) { toast('Preencha todos os campos.', 'aviso'); return; }
+  if (senha.length < 6)          { toast('Senha deve ter no mínimo 6 caracteres.', 'aviso'); return; }
+
+  const btn = document.getElementById('btn-criar-usr');
+  btn.disabled    = true;
+  btn.textContent = 'Criando...';
+
+  /* Tenta criar via Admin API; fallback para signUp público */
+  const { error } = await db.auth.admin.createUser({
+    email, password: senha,
+    user_metadata: { nome, perfil },
+    email_confirm: true
+  }).catch(() => ({ error: { message: 'admin_api_unavailable' } }));
+
+  if (error) {
+    /* Fallback: signUp (exige confirmação de e-mail) */
+    const { error: err2 } = await db.auth.signUp({
+      email, password: senha,
+      options: { data: { nome, perfil } }
+    });
+    if (err2) {
+      toast('Erro ao criar usuário: ' + err2.message, 'erro');
+      btn.disabled = false; btn.textContent = 'Criar Usuário';
+      return;
+    }
+    toast('Usuário criado! Peça que ele confirme o e-mail antes de fazer login.', 'sucesso');
+  } else {
+    toast('Usuário criado com sucesso!', 'sucesso');
+  }
+
+  ['usr-nome','usr-email','usr-senha'].forEach(id => document.getElementById(id).value = '');
+  fecharModal('modal-usuario');
+  btn.disabled = false; btn.textContent = 'Criar Usuário';
+  setTimeout(carregarUsuarios, 1500);
+}
+
+/* ── CLIENTES ─────────────────────────────────────────── */
+async function carregarClientes() {
+  const q = document.getElementById('busca-cliente').value.trim();
+  let query = db.from('clientes').select('*').order('nome').limit(30);
+  if (q) query = query.or(`nome.ilike.%${q}%,cpf.ilike.%${q}%`);
+
+  const { data } = await query;
+  const el = document.getElementById('lista-clientes');
+
+  if (!data?.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:8px 0">Nenhum cliente encontrado.</p>';
+    return;
+  }
+
+  el.innerHTML = data.map(c => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--borda)">
+      <div style="flex:1">
+        <div style="font-size:.85rem;font-weight:500">${c.nome}</div>
+        <div style="font-size:.72rem;color:var(--muted)">
+          ${[c.cpf, c.telefone, c.email].filter(Boolean).join(' · ') || '—'}
+        </div>
+      </div>
+      <button class="btn btn-sm btn-sec"  onclick="editarCliente('${c.id}')">✏️</button>
+      <button class="btn btn-sm btn-perigo"
+              onclick="excluirItem('clientes', '${c.id}', carregarClientes)">🗑</button>
+    </div>
+  `).join('');
+}
+
+function abrirModalCliente(id = null) {
+  ['cli-id','cli-nome','cli-cpf','cli-telefone','cli-email']
+    .forEach(f => { document.getElementById(f).value = ''; });
+  document.getElementById('modal-cliente-titulo').textContent =
+    id ? 'Editar Cliente' : 'Novo Cliente';
+  abrirModal('modal-cliente');
+}
+
+async function editarCliente(id) {
+  const { data: c } = await db.from('clientes').select('*').eq('id', id).single();
+  if (!c) return;
+  document.getElementById('cli-id').value       = c.id;
+  document.getElementById('cli-nome').value     = c.nome;
+  document.getElementById('cli-cpf').value      = c.cpf      ?? '';
+  document.getElementById('cli-telefone').value = c.telefone ?? '';
+  document.getElementById('cli-email').value    = c.email    ?? '';
+  document.getElementById('modal-cliente-titulo').textContent = 'Editar Cliente';
+  abrirModal('modal-cliente');
+}
+
+async function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  if (!nome) { toast('Informe o nome do cliente.', 'aviso'); return; }
+
+  const id      = document.getElementById('cli-id').value;
+  const payload = {
+    nome,
+    cpf:      document.getElementById('cli-cpf').value.trim()      || null,
+    telefone: document.getElementById('cli-telefone').value.trim() || null,
+    email:    document.getElementById('cli-email').value.trim()    || null
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('clientes').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('clientes').insert(payload));
+  }
+
+  if (error) { toast('Erro: ' + error.message, 'erro'); return; }
+  toast(id ? 'Cliente atualizado!' : 'Cliente cadastrado!', 'sucesso');
+  fecharModal('modal-cliente');
+  await carregarClientes();
+}
+
+/* Botão "+ Novo Cliente" → abre modal limpo */
+document.querySelector('[onclick="abrirModal(\'modal-cliente\')"]')
+  ?.addEventListener('click', () => abrirModalCliente());
+
+/* ── CONFIGURAÇÕES GERAIS ─────────────────────────────── */
+async function carregarConfig() {
+  const { data } = await db.from('configuracoes').select('*');
+  (data ?? []).forEach(c => {
+    const mapa = {
+      alerta_estoque_baixo: 'alerta-estoque',
+      nome_loja:            'nome-loja',
+      loja_cnpj:            'loja-cnpj',
+      loja_telefone:        'loja-telefone',
+      loja_endereco:        'loja-endereco',
+      recibo_rodape:        'recibo-rodape',
+      recibo_impressora:    'recibo-impressora',
+      recibo_largura:       'recibo-largura',
+    };
+    const id = mapa[c.chave];
+    if (id) document.getElementById(id).value = c.valor;
+  });
+
+  /* Configurações salvas localmente (impressora e gaveta) */
+  const impressora = localStorage.getItem('kosmo_impressora');
+  const largura    = localStorage.getItem('kosmo_recibo_largura');
+  const gaveta     = localStorage.getItem('kosmo_gaveta_auto');
+  if (impressora) document.getElementById('recibo-impressora').value = impressora;
+  if (largura)    document.getElementById('recibo-largura').value    = largura;
+  if (gaveta !== null) document.getElementById('gaveta-auto').checked = gaveta === 'true';
+}
+
+async function salvarConfig() {
+  const alerta     = document.getElementById('alerta-estoque').value;
+  const nomeLoja   = document.getElementById('nome-loja').value.trim();
+  const cnpj       = document.getElementById('loja-cnpj').value.trim();
+  const telefone   = document.getElementById('loja-telefone').value.trim();
+  const endereco   = document.getElementById('loja-endereco').value.trim();
+  const rodape     = document.getElementById('recibo-rodape').value.trim();
+  const impressora = document.getElementById('recibo-impressora').value.trim();
+  const largura    = document.getElementById('recibo-largura').value;
+  const gaveta     = document.getElementById('gaveta-auto').checked;
+
+  if (!alerta || parseInt(alerta) < 1) {
+    toast('Informe um limiar de estoque válido.', 'aviso');
+    return;
+  }
+
+  /* Salva configurações no Supabase */
+  const upserts = [
+    { chave: 'alerta_estoque_baixo', valor: String(parseInt(alerta)) },
+  ];
+  if (nomeLoja)  upserts.push({ chave: 'nome_loja',         valor: nomeLoja  });
+  if (cnpj)      upserts.push({ chave: 'loja_cnpj',         valor: cnpj      });
+  if (telefone)  upserts.push({ chave: 'loja_telefone',     valor: telefone  });
+  if (endereco)  upserts.push({ chave: 'loja_endereco',     valor: endereco  });
+  if (rodape)    upserts.push({ chave: 'recibo_rodape',     valor: rodape    });
+  if (impressora)upserts.push({ chave: 'recibo_impressora', valor: impressora});
+  upserts.push({ chave: 'recibo_largura', valor: largura });
+
+  const { error } = await db.from('configuracoes').upsert(upserts, { onConflict: 'chave' });
+  if (error) { toast('Erro ao salvar: ' + error.message, 'erro'); return; }
+
+  /* Salva preferências locais (impressora / gaveta) — persistem no dispositivo */
+  localStorage.setItem('kosmo_impressora',    impressora);
+  localStorage.setItem('kosmo_recibo_largura', largura);
+  localStorage.setItem('kosmo_gaveta_auto',   String(gaveta));
+
+  toast('Configurações salvas com sucesso!', 'sucesso');
+}
+
+function testarGaveta() {
+  abrirGaveta();
+  toast('Comando de abertura da gaveta enviado via impressão.', 'info');
+}
+
+/* Abre gaveta via ESC/POS incorporado em job de impressão */
+function abrirGaveta() {
+  const area = document.getElementById('gaveta-cmd') || (() => {
+    const d = document.createElement('div');
+    d.id = 'gaveta-cmd';
+    document.body.appendChild(d);
+    return d;
+  })();
+  /* Comando ESC/POS: ESC p 0 25 250 (abre gaveta pino 2) */
+  area.innerHTML = `<div id="gaveta-print-area" style="display:none;font-family:monospace;font-size:1px;line-height:1px;white-space:pre">\x1b\x70\x00\x19\xfa</div>`;
+  const style = document.createElement('style');
+  style.id = '__gaveta_style';
+  style.textContent = `@media print { body > *:not(#gaveta-print-area) { display:none!important } #gaveta-print-area { display:block!important } }`;
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(() => { style.remove(); area.remove(); }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>

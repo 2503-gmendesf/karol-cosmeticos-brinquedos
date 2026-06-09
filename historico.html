@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KosmoSystem — Histórico de Vendas</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hist-toolbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee;
+    }
+    .hist-toolbar .grupo-inline { display: flex; align-items: center; gap: 6px; font-size: .83rem; }
+    .hist-toolbar input, .hist-toolbar select {
+      border: 1px solid #ccc; border-radius: 5px; padding: 6px 10px; font-size: .83rem;
+    }
+    .hist-toolbar .btn-buscar {
+      padding: 6px 16px; background: #0070f3; color: #fff; border: none;
+      border-radius: 5px; cursor: pointer; font-size: .83rem; font-weight: 600;
+    }
+    .hist-toolbar .btn-buscar:hover { background: #0056c7; }
+    .hist-resumo {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      padding: 10px 16px; background: #f7f8fb; border-bottom: 1px solid #eee;
+    }
+    .hist-resumo-card {
+      background: #fff; border: 1px solid #e4e8f0; border-radius: 8px;
+      padding: 8px 16px; text-align: center; min-width: 130px;
+    }
+    .hist-resumo-card .val { font-size: 1.15rem; font-weight: 800; color: #0070f3; }
+    .hist-resumo-card .leg { font-size: .72rem; color: #888; margin-top: 2px; }
+    .hist-tabela-wrap { overflow-x: auto; }
+    .hist-tabela-wrap table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+    .hist-tabela-wrap thead th {
+      background: #f7f8fb; padding: 10px 12px; text-align: left;
+      font-size: .76rem; color: #666; border-bottom: 2px solid #eee;
+      white-space: nowrap;
+    }
+    .hist-tabela-wrap tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .hist-tabela-wrap tbody tr:hover { background: #fafbff; cursor: pointer; }
+    .badge-pag {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: .72rem; font-weight: 600; background: #e8f4fd; color: #0070f3;
+    }
+    .badge-fiado { background: #fff3e0; color: #e67e22; }
+    .badge-desc  { background: #f0fff4; color: #27ae60; }
+    .val-total { font-weight: 700; color: #1a1a2e; }
+    .pag-wrap { display: flex; justify-content: center; padding: 14px; gap: 6px; }
+
+    /* Modal detalhe */
+    .det-linha { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f5f5f5; font-size: .87rem; }
+    .det-linha:last-child { border: none; }
+    .det-linha .key { color: #888; }
+    .det-linha .val { font-weight: 600; text-align: right; }
+    .det-tabela { width: 100%; border-collapse: collapse; font-size: .83rem; margin: 8px 0; }
+    .det-tabela th { background: #f7f8fb; padding: 6px 8px; text-align: left; font-size: .76rem; color: #666; border-bottom: 1px solid #eee; }
+    .det-tabela td { padding: 7px 8px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
+    .det-tabela tr:last-child td { border: none; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<!-- ── SIDEBAR ─────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>Kosmo<span class="acento">System</span></h2>
+    <small>Gestão de Cosméticos</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="relatorios.html"    class="nav-item" data-admin><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="pdv.html"           class="nav-item"><span class="nav-icon">🛒</span> PDV — Vendas</a>
+    <a href="historico.html"     class="nav-item"><span class="nav-icon">🧾</span> Histórico</a>
+    <a href="produtos.html"      class="nav-item"><span class="nav-icon">📦</span> Produtos</a>
+    <a href="configuracoes.html" class="nav-item" data-admin><span class="nav-icon">⚙️</span> Configurações</a>
+  </nav>
+  <div class="sidebar-footer">KosmoSystem v1.0</div>
+</aside>
+
+<!-- ── WRAPPER ──────────────────────────────────────── -->
+<div class="main-wrapper">
+  <header class="header">
+    <div class="header-esq">
+      <button class="hamburguer" id="hamburguer" aria-label="Menu">☰</button>
+      <span class="header-titulo">🧾 Histórico de Vendas</span>
+    </div>
+    <div class="header-dir">
+      <div class="usuario-info">
+        <span id="usuario-nome">—</span>
+        <span id="usuario-perfil">—</span>
+      </div>
+      <button class="btn-sair" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- Filtros -->
+    <div class="hist-toolbar">
+      <div class="grupo-inline">
+        De: <input type="date" id="f-de">
+        Até: <input type="date" id="f-ate">
+      </div>
+      <div class="grupo-inline">
+        Vendedor:
+        <select id="f-vendedor"><option value="">Todos</option></select>
+      </div>
+      <div class="grupo-inline">
+        Pagamento:
+        <select id="f-pag"><option value="">Todos</option></select>
+      </div>
+      <div class="grupo-inline">
+        <input type="text" id="f-busca" placeholder="Buscar cliente / obs..." style="width:200px">
+      </div>
+      <button class="btn-buscar" onclick="carregarHistorico()">🔍 Buscar</button>
+      <button class="btn-buscar" style="background:#6c757d" onclick="resetFiltros()">↺ Limpar</button>
+    </div>
+
+    <!-- Resumo -->
+    <div class="hist-resumo">
+      <div class="hist-resumo-card"><div class="val" id="r-qtd">0</div><div class="leg">Vendas</div></div>
+      <div class="hist-resumo-card"><div class="val" id="r-total">R$ 0</div><div class="leg">Total</div></div>
+      <div class="hist-resumo-card"><div class="val" id="r-ticket">R$ 0</div><div class="leg">Ticket Médio</div></div>
+      <div class="hist-resumo-card"><div class="val" id="r-desc">R$ 0</div><div class="leg">Descontos</div></div>
+      <div class="hist-resumo-card"><div class="val" id="r-fiado">0</div><div class="leg">Fiado</div></div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="hist-tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Data / Hora</th>
+            <th>Vendedor</th>
+            <th>Cliente</th>
+            <th>Pagamento</th>
+            <th style="text-align:right">Desconto</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-hist">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:#bbb">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pag-wrap" id="pag-wrap"></div>
+
+  </div><!-- /page-content -->
+</div><!-- /main-wrapper -->
+
+<!-- Modal detalhe venda -->
+<div class="modal-overlay" id="modal-detalhe">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-titulo">🧾 Detalhe da Venda</span>
+      <button class="modal-fechar" onclick="fecharModal('modal-detalhe')">×</button>
+    </div>
+    <div class="modal-corpo" id="detalhe-corpo">
+      <p style="text-align:center;color:#bbb;padding:20px">Carregando...</p>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-sec" onclick="fecharModal('modal-detalhe')">Fechar</button>
+      <button class="btn btn-primario" id="btn-reimprimir" onclick="reimprimirVenda()">🖨 Reimprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recibo invisível -->
+<div id="recibo-print"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+
+<style>
+  @media print {
+    @page { size: var(--recibo-largura, 74mm) auto; margin: 0; }
+    body > *:not(#recibo-print) { display: none !important; }
+    #recibo-print {
+      display: block !important;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px; width: 100%; padding: 4mm 3mm;
+    }
+    #recibo-print .r-linha { display: flex; justify-content: space-between; margin: 1.5px 0; gap: 4px; }
+    #recibo-print .r-centro { text-align: center; }
+    #recibo-print .r-hr  { border: none; border-top: 1px solid #000; margin: 4px 0; }
+    #recibo-print .r-dot { border: none; border-top: 1px dotted #000; margin: 4px 0; }
+    #recibo-print .r-bold  { font-weight: bold; }
+    #recibo-print .r-title { font-size: 14px; font-weight: bold; }
+    #recibo-print .r-sm    { font-size: 10px; }
+    #recibo-print .r-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+    #recibo-print table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 3px 0; }
+    #recibo-print table th { text-align: left; border-bottom: 1px solid #000; padding: 1px 0; font-weight: bold; }
+    #recibo-print table th:last-child, #recibo-print table td:last-child { text-align: right; }
+    #recibo-print table td { padding: 2px 0; vertical-align: top; }
+    #recibo-print .r-total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin: 3px 0; }
+  }
+</style>
+
+<script>
+/* Estado */
+let pagAtual = 1;
+const porPag = 25;
+let vendaDetAlhe = null;
+let itensDet = [];
+
+let cfgLoja = {
+  nome: 'KosmoSystem', cnpj: '', telefone: '', endereco: '',
+  rodape: 'Obrigado pela preferência!',
+  largura: localStorage.getItem('kosmo_largura') ?? '74mm',
+  impressora: localStorage.getItem('kosmo_impressora') ?? '',
+};
+
+/* ── Init ─────────────────────────────────────────────── */
+async function init() {
+  const auth = await verificarAuth(['admin', 'vendedor']);
+  if (!auth) return;
+  renderInfoUsuario(auth.perfil);
+  ocultarElementosAdmin(auth.perfil);
+  initSidebar(); marcarNavAtivo();
+
+  /* Período padrão: hoje */
+  const [de, ate] = rangeHoje();
+  document.getElementById('f-de').value  = de.toISOString().slice(0, 10);
+  document.getElementById('f-ate').value = ate.toISOString().slice(0, 10);
+
+  /* Config loja */
+  const { data: cfg } = await db.from('configuracoes').select('*');
+  (cfg ?? []).forEach(c => {
+    if (c.chave === 'nome_loja')    cfgLoja.nome      = c.valor;
+    if (c.chave === 'loja_cnpj')    cfgLoja.cnpj      = c.valor;
+    if (c.chave === 'loja_telefone')cfgLoja.telefone  = c.valor;
+    if (c.chave === 'loja_endereco')cfgLoja.endereco  = c.valor;
+    if (c.chave === 'recibo_rodape')cfgLoja.rodape    = c.valor;
+    if (c.chave === 'recibo_largura')cfgLoja.largura  = c.valor;
+    if (c.chave === 'recibo_impressora' && !cfgLoja.impressora) cfgLoja.impressora = c.valor;
+  });
+  document.documentElement.style.setProperty('--recibo-largura', cfgLoja.largura);
+
+  /* Preenche filtros */
+  const { data: vendedores } = await db.from('profiles').select('id,nome').order('nome');
+  const selV = document.getElementById('f-vendedor');
+  (vendedores ?? []).forEach(v => {
+    const o = document.createElement('option'); o.value = v.id; o.textContent = v.nome; selV.appendChild(o);
+  });
+
+  const { data: formas } = await db.from('formas_pagamento').select('nome').eq('ativo', true).order('nome');
+  const selP = document.getElementById('f-pag');
+  (formas ?? []).forEach(f => {
+    const o = document.createElement('option'); o.value = f.nome; o.textContent = f.nome; selP.appendChild(o);
+  });
+
+  carregarHistorico();
+}
+
+/* ── Carregar histórico ──────────────────────────────── */
+async function carregarHistorico(p = 1) {
+  pagAtual = p;
+  const tbody = document.getElementById('tbody-hist');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#bbb">Buscando...</td></tr>';
+
+  let query = db.from('vendas').select('*', { count: 'exact' });
+
+  /* Filtros */
+  const de   = document.getElementById('f-de').value;
+  const ate  = document.getElementById('f-ate').value;
+  const vend = document.getElementById('f-vendedor').value;
+  const pag  = document.getElementById('f-pag').value;
+  const busca = document.getElementById('f-busca').value.trim();
+
+  if (de)    query = query.gte('criado_em', de + 'T00:00:00');
+  if (ate)   query = query.lte('criado_em', ate + 'T23:59:59');
+  if (vend)  query = query.eq('vendedor_id', vend);
+  if (pag)   query = query.ilike('forma_pagamento_nome', `%${pag}%`);
+  if (busca) query = query.or(`cliente_nome.ilike.%${busca}%,observacao.ilike.%${busca}%`);
+
+  const offset = (p - 1) * porPag;
+  query = query.order('criado_em', { ascending: false }).range(offset, offset + porPag - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) { toast('Erro ao buscar: ' + error.message, 'erro'); return; }
+
+  /* Resumo */
+  atualizarResumo(data ?? []);
+
+  if (!data?.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#bbb">Nenhuma venda encontrada.</td></tr>';
+    document.getElementById('pag-wrap').innerHTML = '';
+    return;
+  }
+
+  /* Renderiza linhas */
+  tbody.innerHTML = data.map((v, idx) => `
+    <tr onclick="abrirDetalhe('${v.id}')">
+      <td style="color:#bbb;font-size:.76rem">${offset + idx + 1}</td>
+      <td style="white-space:nowrap">${fmtDataHora(v.criado_em)}</td>
+      <td>${v.vendedor_nome ?? '—'}</td>
+      <td>${v.cliente_nome ?? '<span style="color:#ccc">—</span>'}</td>
+      <td>
+        <span class="badge-pag ${v.fiado ? 'badge-fiado' : ''}">${v.forma_pagamento_nome ?? '—'}</span>
+      </td>
+      <td style="text-align:right;color:#27ae60;font-size:.82rem">
+        ${v.desconto > 0 ? '<span class="badge-desc">-' + fmt(v.desconto) + '</span>' : '—'}
+      </td>
+      <td class="val-total" style="text-align:right">${fmt(v.total)}</td>
+    </tr>`).join('');
+
+  /* Paginação */
+  renderPaginacao(document.getElementById('pag-wrap'), count, p, porPag, n => carregarHistorico(n));
+}
+
+function atualizarResumo(vendas) {
+  const total   = vendas.reduce((s, v) => s + parseFloat(v.total  ?? 0), 0);
+  const descs   = vendas.reduce((s, v) => s + parseFloat(v.desconto ?? 0), 0);
+  const fiados  = vendas.filter(v => v.fiado).length;
+  document.getElementById('r-qtd').textContent   = vendas.length;
+  document.getElementById('r-total').textContent = fmt(total);
+  document.getElementById('r-ticket').textContent= vendas.length ? fmt(total / vendas.length) : 'R$ 0,00';
+  document.getElementById('r-desc').textContent  = fmt(descs);
+  document.getElementById('r-fiado').textContent = fiados;
+}
+
+function resetFiltros() {
+  const [de, ate] = rangeHoje();
+  document.getElementById('f-de').value       = de.toISOString().slice(0, 10);
+  document.getElementById('f-ate').value      = ate.toISOString().slice(0, 10);
+  document.getElementById('f-vendedor').value = '';
+  document.getElementById('f-pag').value      = '';
+  document.getElementById('f-busca').value    = '';
+  carregarHistorico();
+}
+
+/* ── Detalhe ──────────────────────────────────────────── */
+async function abrirDetalhe(id) {
+  abrirModal('modal-detalhe');
+  const corpo = document.getElementById('detalhe-corpo');
+  corpo.innerHTML = '<p style="text-align:center;color:#bbb;padding:20px">Carregando...</p>';
+
+  const [{ data: v }, { data: itens }] = await Promise.all([
+    db.from('vendas').select('*').eq('id', id).single(),
+    db.from('itens_venda').select('*').eq('venda_id', id).order('produto_nome')
+  ]);
+
+  if (!v) { corpo.innerHTML = '<p style="color:red">Venda não encontrada.</p>'; return; }
+  vendaDetAlhe = v;
+  itensDet     = itens ?? [];
+
+  corpo.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+      <div class="det-linha"><span class="key">Data</span><span class="val">${fmtDataHora(v.criado_em)}</span></div>
+      <div class="det-linha"><span class="key">Vendedor</span><span class="val">${v.vendedor_nome ?? '—'}</span></div>
+      <div class="det-linha"><span class="key">Cliente</span><span class="val">${v.cliente_nome ?? '—'}</span></div>
+      <div class="det-linha"><span class="key">Pagamento</span><span class="val">${v.forma_pagamento_nome ?? '—'}</span></div>
+      <div class="det-linha"><span class="key">Subtotal</span><span class="val">${fmt(v.subtotal)}</span></div>
+      <div class="det-linha"><span class="key">Desconto</span><span class="val" style="color:#e74c3c">${v.desconto > 0 ? '-' + fmt(v.desconto) : '—'}</span></div>
+      <div class="det-linha" style="grid-column:1/-1"><span class="key">Total</span><span class="val" style="color:#0070f3;font-size:1.1rem">${fmt(v.total)}</span></div>
+      ${v.observacao ? `<div class="det-linha" style="grid-column:1/-1"><span class="key">Obs</span><span class="val">${v.observacao}</span></div>` : ''}
+      ${v.fiado ? '<div class="det-linha" style="grid-column:1/-1"><span style="color:#e67e22;font-weight:700">⚠ FIADO — Pagar depois</span></div>' : ''}
+    </div>
+    <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+    <strong style="font-size:.8rem;color:#888">ITENS DA VENDA</strong>
+    <table class="det-tabela" style="margin-top:6px">
+      <thead><tr><th>Produto</th><th>Qtd</th><th>Unit.</th><th>Subtotal</th></tr></thead>
+      <tbody>${itensDet.map(i => `
+        <tr>
+          <td>${i.produto_nome}</td>
+          <td style="text-align:center">${i.quantidade}</td>
+          <td style="text-align:right">${fmt(i.preco_unitario)}</td>
+          <td style="text-align:right">${fmt(i.subtotal)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ── Reimpressão ─────────────────────────────────────── */
+function reimprimirVenda() {
+  if (!vendaDetAlhe) return;
+  const v = vendaDetAlhe;
+  const agora = fmtDataHora(v.criado_em);
+
+  document.getElementById('recibo-print').innerHTML = `
+    <div class="r-header-row">
+      <div>
+        <div class="r-title">${cfgLoja.nome}</div>
+        ${cfgLoja.cnpj     ? `<div class="r-sm">CNPJ: ${cfgLoja.cnpj}</div>` : ''}
+        ${cfgLoja.telefone ? `<div class="r-sm">Contato: ${cfgLoja.telefone}</div>` : ''}
+        ${cfgLoja.endereco ? `<div class="r-sm">Endereço: ${cfgLoja.endereco}</div>` : ''}
+        <div class="r-sm">Cliente: ${v.cliente_nome ?? ''}</div>
+      </div>
+      <div class="r-sm" style="text-align:right;white-space:nowrap">${agora}</div>
+    </div>
+    <hr class="r-hr">
+    <div class="r-centro r-bold" style="margin:2px 0">2ª Via</div>
+    <table>
+      <thead><tr><th>Descrição / Quantidade X Unitário</th><th>Total</th></tr></thead>
+      <tbody>${itensDet.map(i => `
+        <tr>
+          <td><div>${i.produto_nome}</div><div>${i.quantidade} X ${fmt(i.preco_unitario)}</div></td>
+          <td>${fmt(i.subtotal)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <hr class="r-hr">
+    ${v.desconto > 0 ? `<div class="r-linha r-sm"><span>Subtotal</span><span>${fmt(v.subtotal)}</span></div>
+      <div class="r-linha r-sm"><span>Desconto</span><span>-${fmt(v.desconto)}</span></div>` : ''}
+    <div class="r-total-row"><span>Total a Pagar</span><span>${fmt(v.total)}</span></div>
+    <div class="r-linha"><span>${v.forma_pagamento_nome ?? ''}</span><span>${fmt(v.total)}</span></div>
+    ${v.fiado ? '<div class="r-centro r-bold" style="margin:3px 0">FIADO — PAGAR DEPOIS</div>' : ''}
+    ${v.observacao ? `<div class="r-sm">Obs: ${v.observacao}</div>` : ''}
+    <hr class="r-dot">
+    <div class="r-centro r-sm">${cfgLoja.rodape}</div>`;
+
+  window.print();
+}
+
+init();
+</script>
+</body>
+</html>
